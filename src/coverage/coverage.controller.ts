@@ -23,8 +23,7 @@ export class CoverageController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+
   @ApiOperation({ summary: 'Create a new coverage record' })
   @ApiBody({ type: CreateCoverageDto })
   @ApiResponse({ status: 201, description: 'Coverage created successfully', type: Object })
