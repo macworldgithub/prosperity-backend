@@ -7,10 +7,13 @@ import { AddressModule } from './address/address.module';
 import { CoverageModule } from './coverage/coverage.module';
 import { QueryModule } from './query/query.module';
 import { BillModule } from './bill/bill.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -28,6 +31,7 @@ import { BillModule } from './bill/bill.module';
     CoverageModule,
     QueryModule,
     BillModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
