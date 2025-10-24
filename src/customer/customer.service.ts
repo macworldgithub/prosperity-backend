@@ -133,18 +133,63 @@ export class CustomerService {
     @InjectModel('Customer') private customerModel: Model<Customer>,
   ) {}
 
+  // async addCustomer(
+  //   dto: AddCustomerDto,
+  // ): Promise<SoapResponse<AddCustomerResponse>> {
+  //   const response = await this.apiClient.soapCall<AddCustomerResponse>(
+  //     '/UtbCustomer',
+  //     {
+  //       customer: {
+  //         ...dto.customer,
+  //         preferredContactMethod: 'EMAIL',
+  //         orderNotificationEmail: dto.customer.email,
+  //         internetAccess: 'Y',
+  //         company: `${dto.customer.firstName} ${dto.customer.surname}`,
+  //       },
+  //     },
+  //     'addCustomer',
+  //   );
+
+  //   if ('error' in response) {
+  //     throw new AppError(
+  //       response.error.message || 'Failed to add customer',
+  //       400,
+  //     );
+  //   }
+
+  //   await this.customerModel.create({
+  //     custNo: response.return.custNo,
+  //     ...dto.customer,
+  //   });
+
+  //   return response;
+  // }
+
   async addCustomer(
     dto: AddCustomerDto,
   ): Promise<SoapResponse<AddCustomerResponse>> {
+    // Normalize preferred contact for the SOAP backend (it expects uppercase)
+    const prefContact = (
+      dto.customer.preferredContactMethod || 'Email'
+    ).toUpperCase();
+
     const response = await this.apiClient.soapCall<AddCustomerResponse>(
       '/UtbCustomer',
       {
         customer: {
           ...dto.customer,
-          preferredContactMethod: 'EMAIL',
-          orderNotificationEmail: dto.customer.email,
+          // ensure SOAP backend receives expected format
+          preferredContactMethod: prefContact,
+          // prefer explicit orderNotificationEmail when provided
+          orderNotificationEmail:
+            dto.customer.orderNotificationEmail ?? dto.customer.email,
           internetAccess: 'Y',
           company: `${dto.customer.firstName} ${dto.customer.surname}`,
+          // forward newly added optional fields to the SOAP payload
+          sal: dto.customer.sal,
+          dob_port: dto.customer.dob_port,
+          custAuthorityType: dto.customer.custAuthorityType,
+          custAuthorityNo: dto.customer.custAuthorityNo,
         },
       },
       'addCustomer',
@@ -157,9 +202,12 @@ export class CustomerService {
       );
     }
 
+    // Persist to MongoDB including new fields
     await this.customerModel.create({
       custNo: response.return.custNo,
       ...dto.customer,
+      orderNotificationEmail:
+        dto.customer.orderNotificationEmail ?? dto.customer.email,
     });
 
     return response;
