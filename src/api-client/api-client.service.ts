@@ -292,7 +292,8 @@ export class ApiClientService {
 
     this.logger.log(`Fetching credentials for: ${userName}`);
     // const password = await this.credentialsService.getPassword(userName);
-    const password = 'BNMHJK678%^$&4d';
+    const password = this.configService.get('octanePassword');
+    // const password = 'BNMHJK678%^$&4d';
     if (!password)
       throw new AppError(`Password not found for ${userName}`, 404);
 
