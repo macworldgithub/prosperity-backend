@@ -44,6 +44,7 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "soap": "^1.5.0",
     "uuid": "^8.3.2",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
