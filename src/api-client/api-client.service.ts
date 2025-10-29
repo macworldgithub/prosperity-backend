@@ -242,6 +242,97 @@
 // }
 
 // src/api-client/api-client.service.ts
+// import { Injectable, Logger } from '@nestjs/common';
+// import { ConfigService } from '@nestjs/config';
+// import { CredentialsService } from '../credentials/credentials.service';
+// import { AppError } from '../common/errors/app-error';
+// import * as soap from 'soap';
+// import { SoapResponse } from '../common/types/soap-response.type';
+
+// @Injectable()
+// export class ApiClientService {
+//   private readonly logger = new Logger(ApiClientService.name);
+//   private config: any;
+//   private credentialsCache: {
+//     octane: { userName: string; password: string } | null;
+//     benzine: { userName: string; password: string } | null;
+//     lastUpdated: number | null;
+//   } = { octane: null, benzine: null, lastUpdated: null };
+
+//   constructor(
+//     private configService: ConfigService,
+//     private credentialsService: CredentialsService,
+//   ) {
+//     this.config = {
+//       endpoints: {
+//         octane: 'https://api-octane.telcoinabox.com.au/tiabwsv2',
+//         benzine: 'https://benzine.telcoinabox.com:443/tiab',
+//       },
+//       credentials: {
+//         octane: { userName: this.configService.get('octaneUserName') },
+//         benzine: { userName: this.configService.get('benzineUserName') },
+//       },
+//     };
+//   }
+
+//   private async getLoginDetails(apiUrl: string) {
+//     const isBenzine = apiUrl.includes('benzine');
+//     const key = isBenzine ? 'benzine' : 'octane';
+//     const userName = this.config.credentials[key].userName;
+
+//     const now = Date.now();
+//     if (
+//       this.credentialsCache[key] &&
+//       this.credentialsCache.lastUpdated &&
+//       now - this.credentialsCache.lastUpdated < 5 * 60 * 1000
+//     ) {
+//       this.logger.log(`Using cached credentials for: ${userName}`);
+//       return this.credentialsCache[key]!;
+//     }
+
+//     this.logger.log(`Fetching credentials for: ${userName}`);
+//     // const password = await this.credentialsService.getPassword(userName);
+//     const password = this.configService.get('octanePassword');
+//     // const password = 'BNMHJK678%^$&4d';
+//     if (!password)
+//       throw new AppError(`Password not found for ${userName}`, 404);
+
+//     this.credentialsCache[key] = { userName, password };
+//     this.credentialsCache.lastUpdated = now;
+//     return this.credentialsCache[key]!;
+//   }
+
+//   /** Generic SOAP call – returns typed response */
+//   async soapCall<T = any>(
+//     endpoint: string,
+//     args: any,
+//     methodName: string,
+//   ): Promise<SoapResponse<T>> {
+//     const isBenzine = endpoint.includes('benzine');
+//     const baseUrl = this.config.endpoints[isBenzine ? 'benzine' : 'octane'];
+//     const wsdlUrl = `${baseUrl}${endpoint}?wsdl`;
+//     const login = await this.getLoginDetails(baseUrl);
+
+//     this.logger.log(`SOAP client → ${wsdlUrl}`);
+//     const client = await soap.createClientAsync(wsdlUrl).catch((err) => {
+//       throw new AppError(`WSDL load failed: ${err.message}`, 502);
+//     });
+
+//     const fullArgs = { ...args, login };
+
+//     return new Promise((resolve, reject) => {
+//       client[methodName](fullArgs, (err: any, result: any) => {
+//         if (err) {
+//           this.logger.error(`SOAP ${methodName} error`, err);
+//           return reject(new AppError(err.message || 'SOAP call failed', 500));
+//         }
+//         this.logger.log(`SOAP ${methodName} success`, result);
+//         resolve(result as SoapResponse<T>);
+//       });
+//     });
+//   }
+// }
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CredentialsService } from '../credentials/credentials.service';
@@ -291,9 +382,7 @@ export class ApiClientService {
     }
 
     this.logger.log(`Fetching credentials for: ${userName}`);
-    // const password = await this.credentialsService.getPassword(userName);
     const password = this.configService.get('octanePassword');
-    // const password = 'BNMHJK678%^$&4d';
     if (!password)
       throw new AppError(`Password not found for ${userName}`, 404);
 
@@ -330,5 +419,49 @@ export class ApiClientService {
         resolve(result as SoapResponse<T>);
       });
     });
+  }
+
+  /** ✅ Generic REST API Call (used by Payment & QRCode Services) */
+  /** ✅ Generic REST API Call (used by Payment & QRCode Services) */
+  async apiCall<T = any>(
+    path: string,
+    body?: any,
+    method: string = 'POST',
+  ): Promise<T> {
+    const { default: fetch } = await import('node-fetch'); // 👈 dynamic import fix
+
+    const baseUrl = this.configService.get('apiBaseUrl');
+    const url = `${baseUrl}${path}`;
+
+    this.logger.log(`API call → ${method} ${url}`);
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from(
+          `${this.configService.get('octaneUserName')}:${this.configService.get(
+            'octanePassword',
+          )}`,
+        ).toString('base64')}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    }).catch((err) => {
+      this.logger.error(`API call failed: ${err.message}`);
+      throw new AppError(`API call failed: ${err.message}`, 500);
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      this.logger.error(`API error response: ${errorText}`);
+      throw new AppError(
+        `API responded with status ${response.status}`,
+        response.status,
+      );
+    }
+
+    const data = (await response.json()) as T;
+    this.logger.log(`API ${method} success`, data);
+    return data;
   }
 }

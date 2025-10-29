@@ -12,38 +12,38 @@ export class PaymentService {
     private configService: ConfigService,
   ) {}
 
-  // async addPaymentMethod(addPaymentMethodDto: AddPaymentMethodDto) {
-  //   if (!addPaymentMethodDto.custNo || !addPaymentMethodDto.paymentTokenId)
-  //     throw new AppError(
-  //       'Customer number and payment token ID are required',
-  //       400,
-  //     );
-  //   return await this.apiClient.apiCall(
-  //     `/api/v1/group/${this.configService.get('groupNo')}/customer/${addPaymentMethodDto.custNo}/payment-method`,
-  //     {
-  //       paymentProvider: 'QS',
-  //       paymentTokenId: addPaymentMethodDto.paymentTokenId,
-  //     },
-  //   );
-  // }
+  async addPaymentMethod(addPaymentMethodDto: AddPaymentMethodDto) {
+    if (!addPaymentMethodDto.custNo || !addPaymentMethodDto.paymentTokenId)
+      throw new AppError(
+        'Customer number and payment token ID are required',
+        400,
+      );
+    return await this.apiClient.apiCall(
+      `/api/v1/group/${this.configService.get('groupNo')}/customer/${addPaymentMethodDto.custNo}/payment-method`,
+      {
+        paymentProvider: 'QS',
+        paymentTokenId: addPaymentMethodDto.paymentTokenId,
+      },
+    );
+  }
 
-  // async makePayment(makePaymentDto: MakePaymentDto) {
-  //   if (
-  //     !makePaymentDto.custNo ||
-  //     !makePaymentDto.amount ||
-  //     !makePaymentDto.paymentId
-  //   )
-  //     throw new AppError('Invalid payment data provided', 400);
-  //   return await this.apiClient.apiCall(
-  //     `/api/v1/group/${this.configService.get('groupNo')}/customer/${makePaymentDto.custNo}/transaction/payment/`,
-  //     {
-  //       transactionType: 'P',
-  //       paymentTokenId: makePaymentDto.paymentId,
-  //       amount: makePaymentDto.amount,
-  //       receiptEmail: makePaymentDto.email,
-  //       comment: makePaymentDto.comment,
-  //       allowDuplicates: true,
-  //     },
-  //   );
-  // }
+  async makePayment(makePaymentDto: MakePaymentDto) {
+    if (
+      !makePaymentDto.custNo ||
+      !makePaymentDto.amount ||
+      !makePaymentDto.paymentId
+    )
+      throw new AppError('Invalid payment data provided', 400);
+    return await this.apiClient.apiCall(
+      `/api/v1/group/${this.configService.get('groupNo')}/customer/${makePaymentDto.custNo}/transaction/payment/`,
+      {
+        transactionType: 'P',
+        paymentTokenId: makePaymentDto.paymentId,
+        amount: makePaymentDto.amount,
+        receiptEmail: makePaymentDto.email,
+        comment: makePaymentDto.comment,
+        allowDuplicates: true,
+      },
+    );
+  }
 }
