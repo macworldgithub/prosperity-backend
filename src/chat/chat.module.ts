@@ -13,9 +13,9 @@ import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { CustomerModule } from '../customer/customer.module';
 import { NumberModule } from '../number/number.module';
-
+import { UserModule } from 'src/user/user.module';
 @Module({
-  imports: [CustomerModule, NumberModule],
+  imports: [CustomerModule, NumberModule, UserModule],
   controllers: [ChatController],
   providers: [ChatService],
 })
