@@ -37,6 +37,7 @@
     "dotenv": "^17.2.3",
     "mongoose": "^8.18.3",
     "nest-winston": "^1.10.2",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.9",
     "openai": "^6.5.0",
     "passport": "^0.7.0",

@@ -339,7 +339,7 @@ import { CredentialsService } from '../credentials/credentials.service';
 import { AppError } from '../common/errors/app-error';
 import * as soap from 'soap';
 import { SoapResponse } from '../common/types/soap-response.type';
-
+import fetch from 'node-fetch';
 @Injectable()
 export class ApiClientService {
   private readonly logger = new Logger(ApiClientService.name);
@@ -423,13 +423,52 @@ export class ApiClientService {
 
   /** ✅ Generic REST API Call (used by Payment & QRCode Services) */
   /** ✅ Generic REST API Call (used by Payment & QRCode Services) */
+  // async apiCall<T = any>(
+  //   path: string,
+  //   body?: any,
+  //   method: string = 'POST',
+  // ): Promise<T> {
+  //   const { default: fetch } = await import('node-fetch'); // 👈 dynamic import fix
+
+  //   const baseUrl = this.configService.get('apiBaseUrl');
+  //   const url = `${baseUrl}${path}`;
+
+  //   this.logger.log(`API call → ${method} ${url}`);
+
+  //   const response = await fetch(url, {
+  //     method,
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       Authorization: `Basic ${Buffer.from(
+  //         `${this.configService.get('octaneUserName')}:${this.configService.get(
+  //           'octanePassword',
+  //         )}`,
+  //       ).toString('base64')}`,
+  //     },
+  //     body: body ? JSON.stringify(body) : undefined,
+  //   }).catch((err) => {
+  //     this.logger.error(`API call failed: ${err.message}`);
+  //     throw new AppError(`API call failed: ${err.message}`, 500);
+  //   });
+
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     this.logger.error(`API error response: ${errorText}`);
+  //     throw new AppError(
+  //       `API responded with status ${response.status}`,
+  //       response.status,
+  //     );
+  //   }
+
+  //   const data = (await response.json()) as T;
+  //   this.logger.log(`API ${method} success`, data);
+  //   return data;
+  // }
   async apiCall<T = any>(
     path: string,
     body?: any,
     method: string = 'POST',
   ): Promise<T> {
-    const { default: fetch } = await import('node-fetch'); // 👈 dynamic import fix
-
     const baseUrl = this.configService.get('apiBaseUrl');
     const url = `${baseUrl}${path}`;
 
@@ -440,15 +479,10 @@ export class ApiClientService {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${Buffer.from(
-          `${this.configService.get('octaneUserName')}:${this.configService.get(
-            'octanePassword',
-          )}`,
+          `${this.configService.get('octaneUserName')}:${this.configService.get('octanePassword')}`,
         ).toString('base64')}`,
       },
       body: body ? JSON.stringify(body) : undefined,
-    }).catch((err) => {
-      this.logger.error(`API call failed: ${err.message}`);
-      throw new AppError(`API call failed: ${err.message}`, 500);
     });
 
     if (!response.ok) {
