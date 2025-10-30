@@ -776,6 +776,9 @@ import { v4 as uuidv4 } from 'uuid';
 import * as nodemailer from 'nodemailer';
 import { OpenAI } from 'openai';
 import { EscalationRequestDto, QueryRequestDto } from './dto';
+import { CustomerService } from '../customer/customer.service'; // Adjusted path based on typical NestJS structure
+import { NumberService } from '../number/number.service'; // Adjusted path based on typical NestJS structure
+import { AddCustomerDto } from '../customer/dto/add-customer.dto'; // Import DTO for customer creation
 
 const KNOWLEDGE_BASE = `
 ## Safety Instructions and other initial content omitted for brevity, but the KB starts here:
@@ -1314,9 +1317,12 @@ Q: If I start on a 4G plan, can I upgrade to a 5G plan later?
 A: Of course. Since you're never in a contract, you can easily upgrade to one of our 5G plans at the end of your monthly cycle.
 
 `;
+
 interface Message {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
+  tool_call_id?: string;
+  tool_calls?: any[]; // For assistant messages with tool calls
 }
 
 interface SessionState {
@@ -1324,6 +1330,7 @@ interface SessionState {
   email: string | null;
   phone: string | null;
   error: string | null;
+  custNo?: string; // Store customer number after creation for potential future use
 }
 
 interface ConversationData {
@@ -1337,7 +1344,11 @@ export class ChatService {
   private conversationData: Record<string, ConversationData> = {};
   private client: OpenAI;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private customerService: CustomerService,
+    private numberService: NumberService,
+  ) {
     try {
       const apiKey = this.configService.get<string>('XAI_API_KEY');
       if (!apiKey) {
@@ -1438,6 +1449,72 @@ Bele AI Assistant
     return { nextQuestion: state.error, suggestions: [] };
   }
 
+  private async processToolCalls(
+    sessionId: string,
+    toolCalls: any[],
+    messages: Message[],
+  ): Promise<void> {
+    for (const toolCall of toolCalls) {
+      const functionName = toolCall.function.name;
+      const args = JSON.parse(toolCall.function.arguments);
+      let result: any;
+
+      try {
+        switch (functionName) {
+          case 'add_customer':
+            const dto: AddCustomerDto = {
+              customer: {
+                firstName: args.firstName,
+                surname: args.surname,
+                email: args.email,
+                phone: args.phone,
+                dob: args.dob,
+                address: args.address,
+                suburb: args.suburb,
+                state: args.state,
+                postcode: args.postcode,
+                custType: 'R', // Default to residential
+                notes: 'Created via chat AI', // Default note
+                preferredContactMethod: 'Email', // Default
+                sal: '', // Optional, can add if collected
+                dob_port: args.dob, // Use dob if not separate
+                orderNotificationEmail: args.email,
+                custAuthorityType: '', // Optional
+                custAuthorityNo: '', // Optional
+              },
+            };
+            const createResult = await this.customerService.addCustomer(dto);
+            result = createResult;
+            // Store custNo in state for future reference
+            if ('return' in createResult && createResult.return.custNo) {
+              this.conversationData[sessionId].state.custNo =
+                createResult.return.custNo;
+            }
+            break;
+
+          case 'reserve_numbers':
+            result = await this.numberService.reserveNumber();
+            break;
+
+          case 'select_number':
+            result = await this.numberService.selectNumber(args.number);
+            break;
+
+          default:
+            result = { error: 'Unknown function' };
+        }
+      } catch (error) {
+        result = { error: error.message };
+      }
+
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result),
+      });
+    }
+  }
+
   private async askGrok(
     sessionId: string,
     userInput: string,
@@ -1473,27 +1550,119 @@ Start with empathy only if the query is issue-related; otherwise, be direct and 
 Keep responses concise (2–4 sentences), professional, and engaging. Always end with “Is there anything else I can help with?”
 If you cannot resolve or user insists on human, respond exactly with: "${escalationMessage}"
 If query is off-topic, respond: "I'm sorry, but I'm here to help with JUSTmobile mobile services. Could you please ask about plans, billing, or support?"
+For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode), then call add_customer tool.
+After creating customer, call reserve_numbers to get number options and present them to the user.
+Once user chooses a number, call select_number with the chosen number.
+Inform the user of each step's result.
 ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
 `,
     };
 
+    const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+      {
+        type: 'function',
+        function: {
+          name: 'add_customer',
+          description:
+            'Create a new customer account with the provided details',
+          parameters: {
+            type: 'object',
+            properties: {
+              firstName: { type: 'string', description: 'First name' },
+              surname: { type: 'string', description: 'Last name' },
+              email: { type: 'string', description: 'Email address' },
+              phone: { type: 'string', description: 'Phone number' },
+              dob: {
+                type: 'string',
+                description: 'Date of birth (YYYY-MM-DD)',
+              },
+              address: { type: 'string', description: 'Street address' },
+              suburb: { type: 'string', description: 'Suburb' },
+              state: { type: 'string', description: 'State (e.g., VIC)' },
+              postcode: { type: 'string', description: 'Postcode' },
+            },
+            required: [
+              'firstName',
+              'surname',
+              'email',
+              'phone',
+              'dob',
+              'address',
+              'suburb',
+              'state',
+              'postcode',
+            ],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'reserve_numbers',
+          description:
+            'Reserve 5 new phone numbers for the user to choose from',
+          parameters: {
+            type: 'object',
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'select_number',
+          description: 'Select a specific reserved phone number',
+          parameters: {
+            type: 'object',
+            properties: {
+              number: {
+                type: 'string',
+                description: 'The phone number to select',
+              },
+            },
+            required: ['number'],
+          },
+        },
+      },
+    ];
+
+    let messages: Message[] = [
+      systemPrompt,
+      ...this.conversationData[sessionId].history.slice(-15),
+    ];
+
     try {
-      const response = await this.client.chat.completions.create({
-        model: 'grok-2-latest',
-        messages: [
-          systemPrompt,
-          ...this.conversationData[sessionId].history.slice(-15),
-        ],
-      });
+      let reply = '';
+      let hasToolCalls = true;
 
-      const reply = response.choices[0].message.content!;
-      this.conversationData[sessionId].history.push({
-        role: 'assistant',
-        content: reply,
-      });
-      this.conversationData[sessionId].history =
-        this.conversationData[sessionId].history.slice(-15);
+      while (hasToolCalls) {
+        const response = await this.client.chat.completions.create({
+          model: 'grok-2-latest',
+          messages: messages as any[], // Type cast to match OpenAI expected type
+          tools,
+          tool_choice: 'auto',
+        });
 
+        const assistantMessage = response.choices[0].message;
+        messages.push(assistantMessage as Message);
+
+        if (
+          assistantMessage.tool_calls &&
+          assistantMessage.tool_calls.length > 0
+        ) {
+          await this.processToolCalls(
+            sessionId,
+            assistantMessage.tool_calls,
+            messages,
+          );
+        } else {
+          hasToolCalls = false;
+          reply = assistantMessage.content || '';
+        }
+      }
+
+      this.conversationData[sessionId].history = messages.slice(-15);
       return { reply, suggestions };
     } catch (e) {
       this.logger.error(`Grok API error: ${e.message}`);
