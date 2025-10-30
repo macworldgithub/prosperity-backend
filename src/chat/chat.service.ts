@@ -770,7 +770,6 @@
 //     return confirmation;
 //   }
 // }
-
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
@@ -1315,14 +1314,12 @@ Q: If I start on a 4G plan, can I upgrade to a 5G plan later?
 A: Of course. Since you're never in a contract, you can easily upgrade to one of our 5G plans at the end of your monthly cycle.
 
 `;
-
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
 interface SessionState {
-  userId: string;
   full_name: string | null;
   email: string | null;
   phone: string | null;
@@ -1356,12 +1353,11 @@ export class ChatService {
     }
   }
 
-  private initializeSession(userId: string): string {
+  private initializeSession(): string {
     const sessionId = uuidv4();
     this.conversationData[sessionId] = {
       history: [],
       state: {
-        userId,
         full_name: null,
         email: null,
         phone: null,
@@ -1373,25 +1369,21 @@ export class ChatService {
 
   private async sendEscalationEmail(
     sessionId: string,
-    userId: string,
     fullName: string,
     email: string,
     phone: string,
     issueDescription: string,
   ): Promise<void> {
     try {
-      // Email configuration - Update with actual credentials
       const transporter = nodemailer.createTransport({
-        host: 'smtp.hostinger.com', // Example
+        host: 'smtp.hostinger.com',
         port: 587,
-        secure: false, // true for 465, false for other ports
+        secure: false,
         auth: {
-          user: 'support@justmobile.ai', // Update
-          pass: 'your_password', // Update
+          user: 'support@justmobile.ai',
+          pass: 'your_password',
         },
       });
-
-      const state = this.conversationData[sessionId].state;
 
       const subject = `Escalation Request from ${fullName || 'Customer'} - Session ${sessionId}`;
       const body = `
@@ -1400,7 +1392,6 @@ Dear Support Team,
 A customer has requested escalation for an issue. Details below:
 
 **Customer Information:**
-- User ID: ${userId}
 - Name: ${fullName || 'Not provided'}
 - Email: ${email || 'Not provided'}
 - Phone: ${phone || 'Not provided'}
@@ -1418,23 +1409,25 @@ Best regards,
 Bele AI Assistant
 `;
 
-      const recipientEmails = ['support@justmobile.ai']; // Update
-      if (email) {
-        recipientEmails.push(email);
-      }
+      const recipientEmails = ['support@justmobile.ai'];
+      if (email) recipientEmails.push(email);
 
       await transporter.sendMail({
-        from: 'support@justmobile.ai', // Update
+        from: 'support@justmobile.ai',
         to: recipientEmails.join(', '),
         subject,
         text: body,
       });
 
       this.logger.log(
-        `Escalation email sent successfully to ${recipientEmails.join(', ')} for session ${sessionId}`,
+        `Escalation email sent to ${recipientEmails.join(', ')} for session ${sessionId}`,
       );
     } catch (e) {
       this.logger.error(`Failed to send escalation email: ${e.message}`);
+      throw new HttpException(
+        'Failed to send escalation email',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -1442,13 +1435,7 @@ Bele AI Assistant
     nextQuestion: string | null;
     suggestions: string[];
   } {
-    const error = state.error;
-
-    if (error) {
-      return { nextQuestion: error, suggestions: [] };
-    }
-
-    return { nextQuestion: null, suggestions: [] };
+    return { nextQuestion: state.error, suggestions: [] };
   }
 
   private async askGrok(
@@ -1456,9 +1443,8 @@ Bele AI Assistant
     userInput: string,
   ): Promise<{ reply: string; suggestions: string[] }> {
     if (!this.conversationData[sessionId]) {
-      this.logger.error(`Invalid session_id: ${sessionId}`);
       return {
-        reply: 'Session not found. Please start a new conversation.',
+        reply: 'Session expired. Please start a new conversation.',
         suggestions: [],
       };
     }
@@ -1477,20 +1463,17 @@ Bele AI Assistant
       this.getNextQuestionAndSuggestions(state);
     const escalationMessage =
       'It seems like this issue requires human assistance. Please provide your full name, email, phone, and a brief description of the issue so I can escalate it to a live agent.';
+
     const systemPrompt: Message = {
       role: 'system',
       content: `
 You are Bele, an empathetic and efficient AI customer support assistant for JUSTmobile.
 Use the following knowledge base to answer queries accurately: ${KNOWLEDGE_BASE}
-Start with empathy (e.g., “I’m sorry you’re experiencing this”) only if the query is issue-related or expresses a problem; for general inquiries, start directly and positively.
-Provide step-by-step guidance, natural upsells.
-For account-specific issues, suggest using the customer portal or escalate.
-Keep responses concise (2-4 sentences), professional, and engaging. Always end with “Is there anything else I can help with?”
-If you cannot resolve the issue, or it's complex (e.g., porting delays, fraud), or user insists on human, offer escalation by exactly saying: "${escalationMessage}"
-If the query is irrelevant or not related to JUSTmobile services, respond politely with: "I'm sorry, but I'm here to help with JUSTmobile customer support queries. Could you please ask about our mobile services, plans, billing, or troubleshooting?"
-Always respond in English only, regardless of the user's language.
-Focus on technical troubleshooting, connectivity, device issues, billing errors, account management, plans, promotions, add-ons, switching providers, and sales inquiries.
-${nextQuestion ? `Ask this question or provide this information: "${nextQuestion}"` : ''}
+Start with empathy only if the query is issue-related; otherwise, be direct and positive.
+Keep responses concise (2–4 sentences), professional, and engaging. Always end with “Is there anything else I can help with?”
+If you cannot resolve or user insists on human, respond exactly with: "${escalationMessage}"
+If query is off-topic, respond: "I'm sorry, but I'm here to help with JUSTmobile mobile services. Could you please ask about plans, billing, or support?"
+${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
 `,
     };
 
@@ -1502,6 +1485,7 @@ ${nextQuestion ? `Ask this question or provide this information: "${nextQuestion
           ...this.conversationData[sessionId].history.slice(-15),
         ],
       });
+
       const reply = response.choices[0].message.content!;
       this.conversationData[sessionId].history.push({
         role: 'assistant',
@@ -1509,87 +1493,66 @@ ${nextQuestion ? `Ask this question or provide this information: "${nextQuestion
       });
       this.conversationData[sessionId].history =
         this.conversationData[sessionId].history.slice(-15);
+
       return { reply, suggestions };
     } catch (e) {
-      this.logger.error(`Error calling Grok API: ${e.message}`);
-      const fallbackReply =
-        'Sorry, something went wrong while processing your request. Please try again or contact support.';
+      this.logger.error(`Grok API error: ${e.message}`);
+      const fallback = 'Sorry, I encountered an issue. Please try again.';
       this.conversationData[sessionId].history.push({
         role: 'assistant',
-        content: fallbackReply,
+        content: fallback,
       });
-      this.conversationData[sessionId].history =
-        this.conversationData[sessionId].history.slice(-15);
-      return { reply: fallbackReply, suggestions };
+      return { reply: fallback, suggestions: [] };
     }
   }
 
   async processQuery(
-    userId: string,
     request: QueryRequestDto,
   ): Promise<{ message: string; session_id: string; suggestions: string[] }> {
     let sessionId = request.session_id;
-    if (sessionId) {
-      if (
-        !this.conversationData[sessionId] ||
-        this.conversationData[sessionId].state.userId !== userId
-      ) {
-        throw new HttpException(
-          'Invalid or unauthorized session ID',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-    } else {
-      sessionId = this.initializeSession(userId);
+
+    if (sessionId && !this.conversationData[sessionId]) {
+      throw new HttpException('Invalid session ID', HttpStatus.BAD_REQUEST);
     }
+
+    if (!sessionId) {
+      sessionId = this.initializeSession();
+    }
+
     const { reply, suggestions } = await this.askGrok(sessionId, request.query);
     return { message: reply, session_id: sessionId, suggestions };
   }
 
-  async processEscalation(
-    userId: string,
-    request: EscalationRequestDto,
-  ): Promise<string> {
-    const sessionId = request.session_id;
-    if (
-      !this.conversationData[sessionId] ||
-      this.conversationData[sessionId].state.userId !== userId
-    ) {
-      throw new HttpException(
-        'Invalid or unauthorized session ID',
-        HttpStatus.UNAUTHORIZED,
-      );
+  async processEscalation(request: EscalationRequestDto): Promise<string> {
+    const { session_id, full_name, email, phone, issue_description } = request;
+
+    if (!this.conversationData[session_id]) {
+      throw new HttpException('Invalid session ID', HttpStatus.BAD_REQUEST);
     }
 
-    // Validate email format
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(request.email)) {
-      throw new HttpException(
-        'Invalid email format. Please provide a valid email address.',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (!emailRegex.test(email)) {
+      throw new HttpException('Invalid email format', HttpStatus.BAD_REQUEST);
     }
 
-    this.conversationData[sessionId].state.full_name = request.full_name;
-    this.conversationData[sessionId].state.email = request.email;
-    this.conversationData[sessionId].state.phone = request.phone;
+    const state = this.conversationData[session_id].state;
+    state.full_name = full_name;
+    state.email = email;
+    state.phone = phone;
 
     const confirmation =
       "Your issue has been escalated to a live agent. We'll contact you soon!";
-    this.conversationData[sessionId].history.push({
+    this.conversationData[session_id].history.push({
       role: 'assistant',
       content: confirmation,
     });
-    this.conversationData[sessionId].history =
-      this.conversationData[sessionId].history.slice(-15);
 
     await this.sendEscalationEmail(
-      sessionId,
-      userId,
-      request.full_name,
-      request.email,
-      request.phone,
-      request.issue_description,
+      session_id,
+      full_name,
+      email,
+      phone,
+      issue_description,
     );
 
     return confirmation;

@@ -150,7 +150,15 @@
 //     return { message: "Welcome to JUSTmobile's Chatbot!" };
 //   }
 // }
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { EscalationRequestDto, QueryRequestDto } from './dto';
@@ -161,23 +169,14 @@ import {
   ApiBody,
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
-  ApiBearerAuth,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Request } from 'express';
-
-interface AuthenticatedRequest extends Request {
-  user: {
-    userId: string;
-    [key: string]: any;
-  };
-}
 
 class QueryResponseDto {
   @ApiProperty({
     description: 'The response message from Bele AI assistant',
-    example: 'I understand you\'re asking about our mobile plans. We offer plans from $16.14/month with 5GB up to $59.89/month with 150GB. Is there anything else I can help with?',
+    example:
+      "I understand you're asking about our mobile plans. We offer plans from $16.14/month with 5GB up to $59.89/month with 150GB. Is there anything else I can help with?",
   })
   message: string;
 
@@ -198,7 +197,8 @@ class QueryResponseDto {
 class EscalateResponseDto {
   @ApiProperty({
     description: 'Confirmation that issue has been escalated to live agent',
-    example: "Your issue has been escalated to a live agent. We'll contact you soon!",
+    example:
+      "Your issue has been escalated to a live agent. We'll contact you soon!",
   })
   message: string;
 }
@@ -206,7 +206,8 @@ class EscalateResponseDto {
 class WelcomeResponseDto {
   @ApiProperty({
     description: 'Welcome message from Bele AI',
-    example: "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
+    example:
+      "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
   })
   message: string;
 }
@@ -215,7 +216,10 @@ class ErrorResponseDto {
   @ApiProperty({ description: 'HTTP status code', example: 400 })
   statusCode: number;
 
-  @ApiProperty({ description: 'Error message', example: 'Invalid email format' })
+  @ApiProperty({
+    description: 'Error message',
+    example: 'Invalid email format',
+  })
   message: string;
 
   @ApiProperty({ description: 'Error type', example: 'Bad Request' })
@@ -224,15 +228,14 @@ class ErrorResponseDto {
 
 @ApiTags('Chat AI (Bele)')
 @Controller('chat')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post('query')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Send message to Bele AI and receive response',
-    description: 'Process user query using JUSTmobile knowledge base. Maintains conversation context via session_id.'
+    description:
+      'Process user query using JUSTmobile knowledge base. Maintains conversation context via session_id.',
   })
   @ApiBody({ type: QueryRequestDto })
   @ApiResponse({
@@ -244,28 +247,29 @@ export class ChatController {
     description: 'Invalid request format',
     type: ErrorResponseDto,
   })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing JWT token',
-    type: ErrorResponseDto,
-  })
   @ApiInternalServerErrorResponse({
     description: 'AI service temporarily unavailable',
     type: ErrorResponseDto,
   })
-  async queryChat(@Req() req: AuthenticatedRequest, @Body() request: QueryRequestDto) {
+  async queryChat(@Body() request: QueryRequestDto) {
     try {
-      const { message, session_id, suggestions } = await this.chatService.processQuery(req.user.userId, request);
+      const { message, session_id, suggestions } =
+        await this.chatService.processQuery(request);
       return { message, session_id, suggestions };
     } catch (e) {
       if (e instanceof HttpException) throw e;
-      throw new HttpException(`Error processing query: ${e.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        `Error processing query: ${e.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('escalate')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Escalate unresolved issue to live support agent',
-    description: 'Transfers conversation to human agent with full context. Requires valid email format.'
+    description:
+      'Transfers conversation to human agent with full context. Requires valid email format.',
   })
   @ApiBody({ type: EscalationRequestDto })
   @ApiResponse({
@@ -277,21 +281,20 @@ export class ChatController {
     description: 'Invalid session, email format, or missing required fields',
     type: ErrorResponseDto,
   })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing JWT token',
-    type: ErrorResponseDto,
-  })
   @ApiInternalServerErrorResponse({
     description: 'Escalation email delivery failed',
     type: ErrorResponseDto,
   })
-  async escalateIssue(@Req() req: AuthenticatedRequest, @Body() request: EscalationRequestDto) {
+  async escalateIssue(@Body() request: EscalationRequestDto) {
     try {
-      const message = await this.chatService.processEscalation(req.user.userId, request);
+      const message = await this.chatService.processEscalation(request);
       return { message };
     } catch (e) {
       if (e instanceof HttpException) throw e;
-      throw new HttpException(`Error escalating issue: ${e.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        `Error escalating issue: ${e.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -302,11 +305,10 @@ export class ChatController {
     description: 'Initial greeting from chatbot',
     type: WelcomeResponseDto,
   })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid or missing JWT token',
-    type: ErrorResponseDto,
-  })
   async welcome() {
-    return { message: "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?" };
+    return {
+      message:
+        "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
+    };
   }
 }
