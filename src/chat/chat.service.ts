@@ -2400,14 +2400,14 @@ Bele AI Assistant
                 suburb: args.suburb,
                 state: args.state,
                 postcode: args.postcode,
-                custType: 'R', // Default to residential
-                notes: 'Created via chat AI', // Default note
-                preferredContactMethod: 'Email', // Default
-                sal: '', // Optional, can add if collected
-                dob_port: args.dob, // Use dob if not separate
+                custType: 'R',
+                notes: 'Created via chat AI',
+                preferredContactMethod: 'Email',
+                sal: '',
+                dob_port: args.dob,
                 orderNotificationEmail: args.email,
-                custAuthorityType: '', // Optional
-                custAuthorityNo: '', // Optional
+                custAuthorityType: '',
+                custAuthorityNo: '',
               },
             };
             const createResult = await this.customerService.addCustomer(dto);
@@ -2415,15 +2415,21 @@ Bele AI Assistant
               result = createResult;
               break;
             }
+
+            // --------------------------------------------------------------
+            //  FIXED: map suburb → city, postcode → zip for CreateUserDto
+            // --------------------------------------------------------------
             const userDto: CreateUserDto = {
               name: `${args.firstName} ${args.surname}`,
               email: args.email,
               pin: args.pin,
               street: args.address,
-              city: args.suburb,
+              suburb: args.suburb, // <-- city in the old code
               state: args.state,
-              zip: args.postcode,
+              postcode: args.postcode, // <-- zip in the old code
             };
+            // --------------------------------------------------------------
+
             const user = await this.userService.create(userDto);
             const updateDto: UpdateUserDto & { custNo: string } = {
               plan: 'Starter',
@@ -2440,7 +2446,7 @@ Bele AI Assistant
             };
             await this.userService.update(user._id.toString(), updateDto);
             result = { customer: createResult.return, user: user };
-            // Store custNo in state for future reference
+
             if (createResult.return.custNo) {
               this.conversationData[sessionId].state.custNo =
                 createResult.return.custNo;

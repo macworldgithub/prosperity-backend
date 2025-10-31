@@ -21,10 +21,12 @@ import { Customer, CustomerSchema } from '../schemas/customer.schema';
 import { ApiClientModule } from '../api-client/api-client.module';
 import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
+import { User, UserSchema } from 'src/schemas/user.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Customer.name, schema: CustomerSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     ApiClientModule,
   ],
