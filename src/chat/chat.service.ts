@@ -934,6 +934,31 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
       let reply = '';
       let hasToolCalls = true;
 
+      // while (hasToolCalls) {
+      //   const response = await this.client.chat.completions.create({
+      //     model: 'grok-2-latest',
+      //     messages: messages as any[],
+      //     tools,
+      //     tool_choice: 'auto',
+      //   });
+
+      //   const assistantMessage = response.choices[0].message;
+      //   messages.push(assistantMessage as Message);
+
+      //   if (
+      //     assistantMessage.tool_calls &&
+      //     assistantMessage.tool_calls.length > 0
+      //   ) {
+      //     await this.processToolCalls(
+      //       sessionId,
+      //       assistantMessage.tool_calls,
+      //       messages,
+      //     );
+      //   } else {
+      //     hasToolCalls = false;
+      //     reply = assistantMessage.content || '';
+      //   }
+      // }
       while (hasToolCalls) {
         const response = await this.client.chat.completions.create({
           model: 'grok-2-latest',
@@ -960,6 +985,26 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
         }
       }
 
+      // === NEW: Inject Customer ID into reply if created ===
+      if (!hasToolCalls && reply) {
+        const lastToolResponse = messages
+          .slice()
+          .reverse()
+          .find((m) => m.role === 'tool' && m.content.includes('"custNo"'));
+
+        if (lastToolResponse) {
+          try {
+            const toolResult = JSON.parse(lastToolResponse.content);
+            if (toolResult.customer?.custNo) {
+              const custNo = toolResult.customer.custNo;
+              reply = `${reply}\n\nYour account is set up! Your **Customer ID is ${custNo}**. Keep this safe .`;
+              this.conversationData[sessionId].state.custNo = custNo;
+            }
+          } catch (e) {
+            this.logger.warn('Failed to parse custNo from tool response', e);
+          }
+        }
+      }
       this.conversationData[sessionId].history = messages.slice(-15);
       return { reply, suggestions };
     } catch (e) {
