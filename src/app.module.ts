@@ -58,7 +58,7 @@ import { PaymentModule } from './payment/payment.module';
 import { QrCodeModule } from './qrcode/qrcode.module';
 import { EmailModule } from './email/email.module';
 import { LoggerModule } from './logger/logger.module';
-
+import { PlanModule } from './plan/plan.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -105,6 +105,7 @@ import { LoggerModule } from './logger/logger.module';
     QueryModule,
     BillModule,
     ChatModule,
+    PlanModule,
   ],
 })
 export class AppModule {}
