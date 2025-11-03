@@ -2244,11 +2244,465 @@ A: Of course. Since you're never in a contract, you can easily upgrade to one of
 
 `;
 
+// interface Message {
+//   role: 'user' | 'assistant' | 'system' | 'tool';
+//   content: string;
+//   tool_call_id?: string;
+//   tool_calls?: any[]; // For assistant messages with tool calls
+// }
+
+// interface SessionState {
+//   full_name: string | null;
+//   email: string | null;
+//   phone: string | null;
+//   error: string | null;
+//   custNo?: string; // Store customer number after creation for potential future use
+// }
+
+// interface ConversationData {
+//   history: Message[];
+//   state: SessionState;
+// }
+
+// @Injectable()
+// export class ChatService {
+//   private readonly logger = new Logger(ChatService.name);
+//   private conversationData: Record<string, ConversationData> = {};
+//   private client: OpenAI;
+
+//   constructor(
+//     private configService: ConfigService,
+//     private customerService: CustomerService,
+//     private numberService: NumberService,
+//     private userService: UserService,
+//   ) {
+//     try {
+//       const apiKey = this.configService.get<string>('XAI_API_KEY');
+//       if (!apiKey) {
+//         throw new Error('XAI_API_KEY environment variable not set');
+//       }
+//       this.client = new OpenAI({
+//         apiKey,
+//         baseURL: 'https://api.x.ai/v1',
+//       });
+//     } catch (e) {
+//       this.logger.error(`Failed to initialize OpenAI client: ${e.message}`);
+//       throw e;
+//     }
+//   }
+
+//   private initializeSession(): string {
+//     const sessionId = uuidv4();
+//     this.conversationData[sessionId] = {
+//       history: [],
+//       state: {
+//         full_name: null,
+//         email: null,
+//         phone: null,
+//         error: null,
+//       },
+//     };
+//     return sessionId;
+//   }
+
+//   private async sendEscalationEmail(
+//     sessionId: string,
+//     fullName: string,
+//     email: string,
+//     phone: string,
+//     issueDescription: string,
+//   ): Promise<void> {
+//     try {
+//       const transporter = nodemailer.createTransport({
+//         host: 'smtp.hostinger.com',
+//         port: 587,
+//         secure: false,
+//         auth: {
+//           user: 'support@justmobile.ai',
+//           pass: 'your_password',
+//         },
+//       });
+
+//       const subject = `Escalation Request from ${fullName || 'Customer'} - Session ${sessionId}`;
+//       const body = `
+// Dear Support Team,
+
+// A customer has requested escalation for an issue. Details below:
+
+// **Customer Information:**
+// - Name: ${fullName || 'Not provided'}
+// - Email: ${email || 'Not provided'}
+// - Phone: ${phone || 'Not provided'}
+
+// **Issue Description:**
+// ${issueDescription}
+
+// **Session Details:**
+// - Session ID: ${sessionId}
+// - Conversation History: ${JSON.stringify(this.conversationData[sessionId].history, null, 2)}
+
+// Please contact the customer to resolve.
+
+// Best regards,
+// Bele AI Assistant
+// `;
+
+//       const recipientEmails = ['support@justmobile.ai'];
+//       if (email) recipientEmails.push(email);
+
+//       await transporter.sendMail({
+//         from: 'support@justmobile.ai',
+//         to: recipientEmails.join(', '),
+//         subject,
+//         text: body,
+//       });
+
+//       this.logger.log(
+//         `Escalation email sent to ${recipientEmails.join(', ')} for session ${sessionId}`,
+//       );
+//     } catch (e) {
+//       this.logger.error(`Failed to send escalation email: ${e.message}`);
+//       throw new HttpException(
+//         'Failed to send escalation email',
+//         HttpStatus.INTERNAL_SERVER_ERROR,
+//       );
+//     }
+//   }
+
+//   private getNextQuestionAndSuggestions(state: SessionState): {
+//     nextQuestion: string | null;
+//     suggestions: string[];
+//   } {
+//     return { nextQuestion: state.error, suggestions: [] };
+//   }
+
+//   private async processToolCalls(
+//     sessionId: string,
+//     toolCalls: any[],
+//     messages: Message[],
+//   ): Promise<void> {
+//     for (const toolCall of toolCalls) {
+//       const functionName = toolCall.function.name;
+//       const args = JSON.parse(toolCall.function.arguments);
+//       let result: any;
+
+//       try {
+//         switch (functionName) {
+//           case 'add_customer':
+//             const dto: AddCustomerDto = {
+//               customer: {
+//                 firstName: args.firstName,
+//                 surname: args.surname,
+//                 email: args.email,
+//                 phone: args.phone,
+//                 dob: args.dob,
+//                 address: args.address,
+//                 suburb: args.suburb,
+//                 state: args.state,
+//                 postcode: args.postcode,
+//                 custType: 'R',
+//                 notes: 'Created via chat AI',
+//                 preferredContactMethod: 'Email',
+//                 sal: '',
+//                 dob_port: args.dob,
+//                 orderNotificationEmail: args.email,
+//                 custAuthorityType: '',
+//                 custAuthorityNo: '',
+//               },
+//             };
+//             const createResult = await this.customerService.addCustomer(dto);
+//             if ('error' in createResult) {
+//               result = createResult;
+//               break;
+//             }
+
+//             // --------------------------------------------------------------
+//             //  FIXED: map suburb → city, postcode → zip for CreateUserDto
+//             // --------------------------------------------------------------
+//             const userDto: CreateUserDto = {
+//               name: `${args.firstName} ${args.surname}`,
+//               email: args.email,
+//               pin: args.pin,
+//               street: args.address,
+//               suburb: args.suburb, // <-- city in the old code
+//               state: args.state,
+//               postcode: args.postcode, // <-- zip in the old code
+//             };
+//             // --------------------------------------------------------------
+
+//             const user = await this.userService.create(userDto);
+//             const updateDto: UpdateUserDto & { custNo: string } = {
+//               plan: 'Starter',
+//               speed: '4G',
+//               status: 'Active',
+//               expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+//                 .toISOString()
+//                 .split('T')[0],
+//               dataUsed: 0,
+//               dataLimit: 5,
+//               biometricEnrolled: false,
+//               image: '',
+//               custNo: createResult.return.custNo,
+//             };
+//             await this.userService.update(user._id.toString(), updateDto);
+//             result = { customer: createResult.return, user: user };
+
+//             if (createResult.return.custNo) {
+//               this.conversationData[sessionId].state.custNo =
+//                 createResult.return.custNo;
+//             }
+//             break;
+
+//           case 'reserve_numbers':
+//             result = await this.numberService.reserveNumber();
+//             break;
+
+//           case 'select_number':
+//             result = await this.numberService.selectNumber(args.number);
+//             break;
+
+//           default:
+//             result = { error: 'Unknown function' };
+//         }
+//       } catch (error) {
+//         result = { error: error.message };
+//       }
+
+//       messages.push({
+//         role: 'tool',
+//         tool_call_id: toolCall.id,
+//         content: JSON.stringify(result),
+//       });
+//     }
+//   }
+
+//   private async askGrok(
+//     sessionId: string,
+//     userInput: string,
+//   ): Promise<{ reply: string; suggestions: string[] }> {
+//     if (!this.conversationData[sessionId]) {
+//       return {
+//         reply: 'Session expired. Please start a new conversation.',
+//         suggestions: [],
+//       };
+//     }
+
+//     const state = this.conversationData[sessionId].state;
+//     state.error = null;
+
+//     if (userInput) {
+//       this.conversationData[sessionId].history.push({
+//         role: 'user',
+//         content: userInput,
+//       });
+//     }
+
+//     const { nextQuestion, suggestions } =
+//       this.getNextQuestionAndSuggestions(state);
+//     const escalationMessage =
+//       'It seems like this issue requires human assistance. Please provide your full name, email, phone, and a brief description of the issue so I can escalate it to a live agent.';
+
+//     const systemPrompt: Message = {
+//       role: 'system',
+//       content: `
+// You are Bele, an empathetic and efficient AI customer support assistant for JUSTmobile.
+// Use the following knowledge base to answer queries accurately: ${KNOWLEDGE_BASE}
+// Start with empathy only if the query is issue-related; otherwise, be direct and positive.
+// Keep responses concise (2–4 sentences), professional, and engaging. Always end with “Is there anything else I can help with?”
+// If you cannot resolve or user insists on human, respond exactly with: "${escalationMessage}"
+// If query is off-topic, respond: "I'm sorry, but I'm here to help with JUSTmobile mobile services. Could you please ask about plans, billing, or support?"
+// For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode, pin), then call add_customer tool.
+// After creating customer, call reserve_numbers to get number options and present them to the user.
+// Once user chooses a number, call select_number with the chosen number.
+// Inform the user of each step's result.
+// ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
+// `,
+//     };
+
+//     const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+//       {
+//         type: 'function',
+//         function: {
+//           name: 'add_customer',
+//           description:
+//             'Create a new customer account with the provided details',
+//           parameters: {
+//             type: 'object',
+//             properties: {
+//               firstName: { type: 'string', description: 'First name' },
+//               surname: { type: 'string', description: 'Last name' },
+//               email: { type: 'string', description: 'Email address' },
+//               phone: { type: 'string', description: 'Phone number' },
+//               dob: {
+//                 type: 'string',
+//                 description: 'Date of birth (YYYY-MM-DD)',
+//               },
+//               address: { type: 'string', description: 'Street address' },
+//               suburb: { type: 'string', description: 'Suburb' },
+//               state: { type: 'string', description: 'State (e.g., VIC)' },
+//               postcode: { type: 'string', description: 'Postcode' },
+//               pin: { type: 'string', description: 'User PIN' },
+//             },
+//             required: [
+//               'firstName',
+//               'surname',
+//               'email',
+//               'phone',
+//               'dob',
+//               'address',
+//               'suburb',
+//               'state',
+//               'postcode',
+//               'pin',
+//             ],
+//           },
+//         },
+//       },
+//       {
+//         type: 'function',
+//         function: {
+//           name: 'reserve_numbers',
+//           description:
+//             'Reserve 5 new phone numbers for the user to choose from',
+//           parameters: {
+//             type: 'object',
+//             properties: {},
+//             required: [],
+//           },
+//         },
+//       },
+//       {
+//         type: 'function',
+//         function: {
+//           name: 'select_number',
+//           description: 'Select a specific reserved phone number',
+//           parameters: {
+//             type: 'object',
+//             properties: {
+//               number: {
+//                 type: 'string',
+//                 description: 'The phone number to select',
+//               },
+//             },
+//             required: ['number'],
+//           },
+//         },
+//       },
+//     ];
+
+//     let messages: Message[] = [
+//       systemPrompt,
+//       ...this.conversationData[sessionId].history.slice(-15),
+//     ];
+
+//     try {
+//       let reply = '';
+//       let hasToolCalls = true;
+
+//       while (hasToolCalls) {
+//         const response = await this.client.chat.completions.create({
+//           model: 'grok-2-latest',
+//           messages: messages as any[], // Type cast to match OpenAI expected type
+//           tools,
+//           tool_choice: 'auto',
+//         });
+
+//         const assistantMessage = response.choices[0].message;
+//         messages.push(assistantMessage as Message);
+
+//         if (
+//           assistantMessage.tool_calls &&
+//           assistantMessage.tool_calls.length > 0
+//         ) {
+//           await this.processToolCalls(
+//             sessionId,
+//             assistantMessage.tool_calls,
+//             messages,
+//           );
+//         } else {
+//           hasToolCalls = false;
+//           reply = assistantMessage.content || '';
+//         }
+//       }
+
+//       this.conversationData[sessionId].history = messages.slice(-15);
+//       return { reply, suggestions };
+//     } catch (e) {
+//       this.logger.error(`Grok API error: ${e.message}`);
+//       const fallback = 'Sorry, I encountered an issue. Please try again.';
+//       this.conversationData[sessionId].history.push({
+//         role: 'assistant',
+//         content: fallback,
+//       });
+//       return { reply: fallback, suggestions: [] };
+//     }
+//   }
+
+//   async processQuery(
+//     request: QueryRequestDto,
+//   ): Promise<{ message: string; session_id: string; suggestions: string[] }> {
+//     let sessionId = request.session_id;
+
+//     if (sessionId && !this.conversationData[sessionId]) {
+//       throw new HttpException('Invalid session ID', HttpStatus.BAD_REQUEST);
+//     }
+
+//     if (!sessionId) {
+//       sessionId = this.initializeSession();
+//     }
+
+//     const { reply, suggestions } = await this.askGrok(sessionId, request.query);
+//     return { message: reply, session_id: sessionId, suggestions };
+//   }
+
+//   async processEscalation(request: EscalationRequestDto): Promise<string> {
+//     const { session_id, full_name, email, phone, issue_description } = request;
+
+//     if (!this.conversationData[session_id]) {
+//       throw new HttpException('Invalid session ID', HttpStatus.BAD_REQUEST);
+//     }
+
+//     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+//     if (!emailRegex.test(email)) {
+//       throw new HttpException('Invalid email format', HttpStatus.BAD_REQUEST);
+//     }
+
+//     const state = this.conversationData[session_id].state;
+//     state.full_name = full_name;
+//     state.email = email;
+//     state.phone = phone;
+
+//     const confirmation =
+//       "Your issue has been escalated to a live agent. We'll contact you soon!";
+//     this.conversationData[session_id].history.push({
+//       role: 'assistant',
+//       content: confirmation,
+//     });
+
+//     await this.sendEscalationEmail(
+//       session_id,
+//       full_name,
+//       email,
+//       phone,
+//       issue_description,
+//     );
+
+//     return confirmation;
+//   }
+// }
+
 interface Message {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   tool_call_id?: string;
-  tool_calls?: any[]; // For assistant messages with tool calls
+  tool_calls?: any[];
+}
+
+interface BrandInfo {
+  key: string;
+  name: string;
+  company: string;
+  charity?: string;
 }
 
 interface SessionState {
@@ -2256,7 +2710,8 @@ interface SessionState {
   email: string | null;
   phone: string | null;
   error: string | null;
-  custNo?: string; // Store customer number after creation for potential future use
+  custNo?: string;
+  brand?: BrandInfo;
 }
 
 interface ConversationData {
@@ -2269,6 +2724,25 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private conversationData: Record<string, ConversationData> = {};
   private client: OpenAI;
+
+  private readonly BRAND_CONFIG: Record<string, BrandInfo> = {
+    justmobile: {
+      key: 'justmobile',
+      name: 'Bele',
+      company: 'JUSTmobile',
+    },
+    'flying-kiwi': {
+      key: 'flying-kiwi',
+      name: 'Kiwi',
+      company: 'Flying Kiwi',
+      charity: 'Supporting Australian wildlife conservation',
+    },
+    'prosperity-tech': {
+      key: 'prosperity-tech',
+      name: 'Prosper',
+      company: 'Prosperity Tech',
+    },
+  };
 
   constructor(
     private configService: ConfigService,
@@ -2300,6 +2774,7 @@ export class ChatService {
         email: null,
         phone: null,
         error: null,
+        brand: this.BRAND_CONFIG['justmobile'],
       },
     };
     return sessionId;
@@ -2323,28 +2798,30 @@ export class ChatService {
         },
       });
 
-      const subject = `Escalation Request from ${fullName || 'Customer'} - Session ${sessionId}`;
+      const brand = this.conversationData[sessionId]?.state.brand;
+      const company = brand?.company || 'JUSTmobile';
+
+      const subject = `Escalation from ${fullName || 'Customer'} - ${company} - Session ${sessionId}`;
       const body = `
 Dear Support Team,
 
-A customer has requested escalation for an issue. Details below:
+A customer has requested escalation for an issue.
 
 **Customer Information:**
 - Name: ${fullName || 'Not provided'}
 - Email: ${email || 'Not provided'}
 - Phone: ${phone || 'Not provided'}
+- Brand: ${company}
 
 **Issue Description:**
 ${issueDescription}
 
-**Session Details:**
-- Session ID: ${sessionId}
-- Conversation History: ${JSON.stringify(this.conversationData[sessionId].history, null, 2)}
+**Session ID:** ${sessionId}
 
 Please contact the customer to resolve.
 
 Best regards,
-Bele AI Assistant
+${brand?.name || 'Bele'} AI Assistant
 `;
 
       const recipientEmails = ['support@justmobile.ai'];
@@ -2357,9 +2834,7 @@ Bele AI Assistant
         text: body,
       });
 
-      this.logger.log(
-        `Escalation email sent to ${recipientEmails.join(', ')} for session ${sessionId}`,
-      );
+      this.logger.log(`Escalation email sent for session ${sessionId}`);
     } catch (e) {
       this.logger.error(`Failed to send escalation email: ${e.message}`);
       throw new HttpException(
@@ -2416,19 +2891,15 @@ Bele AI Assistant
               break;
             }
 
-            // --------------------------------------------------------------
-            //  FIXED: map suburb → city, postcode → zip for CreateUserDto
-            // --------------------------------------------------------------
             const userDto: CreateUserDto = {
               name: `${args.firstName} ${args.surname}`,
               email: args.email,
               pin: args.pin,
               street: args.address,
-              suburb: args.suburb, // <-- city in the old code
+              suburb: args.suburb,
               state: args.state,
-              postcode: args.postcode, // <-- zip in the old code
+              postcode: args.postcode,
             };
-            // --------------------------------------------------------------
 
             const user = await this.userService.create(userDto);
             const updateDto: UpdateUserDto & { custNo: string } = {
@@ -2502,21 +2973,30 @@ Bele AI Assistant
     const escalationMessage =
       'It seems like this issue requires human assistance. Please provide your full name, email, phone, and a brief description of the issue so I can escalate it to a live agent.';
 
+    const brand = state.brand!;
+    const intro = brand.charity
+      ? `${brand.name} here, your AI assistant for ${brand.company}. ${brand.charity}.`
+      : `${brand.name} here, your AI assistant for ${brand.company}.`;
+
     const systemPrompt: Message = {
       role: 'system',
       content: `
-You are Bele, an empathetic and efficient AI customer support assistant for JUSTmobile.
+You are ${brand.name}, an empathetic and efficient AI customer support assistant for ${brand.company}.
 Use the following knowledge base to answer queries accurately: ${KNOWLEDGE_BASE}
+
+When asked "Who are you?", respond exactly:
+"${intro} I'm here to help with your mobile plan, billing, or tech support. Is there anything else I can help with?"
+
 Start with empathy only if the query is issue-related; otherwise, be direct and positive.
 Keep responses concise (2–4 sentences), professional, and engaging. Always end with “Is there anything else I can help with?”
 If you cannot resolve or user insists on human, respond exactly with: "${escalationMessage}"
-If query is off-topic, respond: "I'm sorry, but I'm here to help with JUSTmobile mobile services. Could you please ask about plans, billing, or support?"
+If query is off-topic, respond: "I'm sorry, but I'm here to help with ${brand.company} mobile services. Could you please ask about plans, billing, or support?"
 For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode, pin), then call add_customer tool.
 After creating customer, call reserve_numbers to get number options and present them to the user.
 Once user chooses a number, call select_number with the chosen number.
 Inform the user of each step's result.
 ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
-`,
+`.trim(),
     };
 
     const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -2564,11 +3044,7 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
           name: 'reserve_numbers',
           description:
             'Reserve 5 new phone numbers for the user to choose from',
-          parameters: {
-            type: 'object',
-            properties: {},
-            required: [],
-          },
+          parameters: { type: 'object', properties: {}, required: [] },
         },
       },
       {
@@ -2602,7 +3078,7 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
       while (hasToolCalls) {
         const response = await this.client.chat.completions.create({
           model: 'grok-2-latest',
-          messages: messages as any[], // Type cast to match OpenAI expected type
+          messages: messages as any[],
           tools,
           tool_choice: 'auto',
         });
@@ -2651,6 +3127,12 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
       sessionId = this.initializeSession();
     }
 
+    // Set brand
+    const brandKey = (request.brand || 'justmobile').toLowerCase();
+    const brandConfig =
+      this.BRAND_CONFIG[brandKey] || this.BRAND_CONFIG['justmobile'];
+    this.conversationData[sessionId].state.brand = brandConfig;
+
     const { reply, suggestions } = await this.askGrok(sessionId, request.query);
     return { message: reply, session_id: sessionId, suggestions };
   }
@@ -2688,5 +3170,14 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
     );
 
     return confirmation;
+  }
+
+  getWelcomeMessage(brand?: string): { message: string } {
+    const brandKey = (brand || 'justmobile').toLowerCase();
+    const config =
+      this.BRAND_CONFIG[brandKey] || this.BRAND_CONFIG['justmobile'];
+    return {
+      message: `Welcome to ${config.company}'s Chatbot! I'm ${config.name}, here to help 24/7. How can I assist you?`,
+    };
   }
 }

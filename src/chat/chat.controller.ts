@@ -313,6 +313,169 @@
 //   }
 // }
 
+// import {
+//   Body,
+//   Controller,
+//   Get,
+//   HttpException,
+//   HttpStatus,
+//   Post,
+//   Req,
+// } from '@nestjs/common';
+// import { ApiProperty } from '@nestjs/swagger';
+// import { ChatService } from './chat.service';
+// import { EscalationRequestDto, QueryRequestDto } from './dto';
+// import {
+//   ApiTags,
+//   ApiOperation,
+//   ApiResponse,
+//   ApiBody,
+//   ApiBadRequestResponse,
+//   ApiInternalServerErrorResponse,
+// } from '@nestjs/swagger';
+// import { Request } from 'express';
+
+// class QueryResponseDto {
+//   @ApiProperty({
+//     description: 'The response message from Bele AI assistant',
+//     example:
+//       "I understand you're asking about our mobile plans. We offer plans from $16.14/month with 5GB up to $59.89/month with 150GB. Is there anything else I can help with?",
+//   })
+//   message: string;
+
+//   @ApiProperty({
+//     description: 'The session ID for maintaining conversation context',
+//     example: '123e4567-e89b-12d3-a456-426614174000',
+//   })
+//   session_id: string;
+
+//   @ApiProperty({
+//     description: 'Suggested follow-up questions or actions',
+//     example: ['View all plans', 'Check coverage', 'Activate eSIM'],
+//     type: [String],
+//   })
+//   suggestions: string[];
+// }
+
+// class EscalateResponseDto {
+//   @ApiProperty({
+//     description: 'Confirmation that issue has been escalated to live agent',
+//     example:
+//       "Your issue has been escalated to a live agent. We'll contact you soon!",
+//   })
+//   message: string;
+// }
+
+// class WelcomeResponseDto {
+//   @ApiProperty({
+//     description: 'Welcome message from Bele AI',
+//     example:
+//       "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
+//   })
+//   message: string;
+// }
+
+// class ErrorResponseDto {
+//   @ApiProperty({ description: 'HTTP status code', example: 400 })
+//   statusCode: number;
+
+//   @ApiProperty({
+//     description: 'Error message',
+//     example: 'Invalid email format',
+//   })
+//   message: string;
+
+//   @ApiProperty({ description: 'Error type', example: 'Bad Request' })
+//   error: string;
+// }
+
+// @ApiTags('Chat AI (Bele)')
+// @Controller('chat')
+// export class ChatController {
+//   constructor(private readonly chatService: ChatService) {}
+
+//   @Post('query')
+//   @ApiOperation({
+//     summary: 'Send message to Bele AI and receive response',
+//     description:
+//       'Process user query using JUSTmobile knowledge base. Maintains conversation context via session_id.',
+//   })
+//   @ApiBody({ type: QueryRequestDto })
+//   @ApiResponse({
+//     status: 200,
+//     description: 'Successful AI response with conversation context',
+//     type: QueryResponseDto,
+//   })
+//   @ApiBadRequestResponse({
+//     description: 'Invalid request format',
+//     type: ErrorResponseDto,
+//   })
+//   @ApiInternalServerErrorResponse({
+//     description: 'AI service temporarily unavailable',
+//     type: ErrorResponseDto,
+//   })
+//   async queryChat(@Body() request: QueryRequestDto) {
+//     try {
+//       const { message, session_id, suggestions } =
+//         await this.chatService.processQuery(request);
+//       return { message, session_id, suggestions };
+//     } catch (e) {
+//       if (e instanceof HttpException) throw e;
+//       throw new HttpException(
+//         `Error processing query: ${e.message}`,
+//         HttpStatus.INTERNAL_SERVER_ERROR,
+//       );
+//     }
+//   }
+
+//   @Post('escalate')
+//   @ApiOperation({
+//     summary: 'Escalate unresolved issue to live support agent',
+//     description:
+//       'Transfers conversation to human agent with full context. Requires valid email format.',
+//   })
+//   @ApiBody({ type: EscalationRequestDto })
+//   @ApiResponse({
+//     status: 200,
+//     description: 'Issue successfully escalated to live agent',
+//     type: EscalateResponseDto,
+//   })
+//   @ApiBadRequestResponse({
+//     description: 'Invalid session, email format, or missing required fields',
+//     type: ErrorResponseDto,
+//   })
+//   @ApiInternalServerErrorResponse({
+//     description: 'Escalation email delivery failed',
+//     type: ErrorResponseDto,
+//   })
+//   async escalateIssue(@Body() request: EscalationRequestDto) {
+//     try {
+//       const message = await this.chatService.processEscalation(request);
+//       return { message };
+//     } catch (e) {
+//       if (e instanceof HttpException) throw e;
+//       throw new HttpException(
+//         `Error escalating issue: ${e.message}`,
+//         HttpStatus.INTERNAL_SERVER_ERROR,
+//       );
+//     }
+//   }
+
+//   @Get()
+//   @ApiOperation({ summary: 'Get welcome message from Bele AI' })
+//   @ApiResponse({
+//     status: 200,
+//     description: 'Initial greeting from chatbot',
+//     type: WelcomeResponseDto,
+//   })
+//   async welcome() {
+//     return {
+//       message:
+//         "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
+//     };
+//   }
+// }
+
 import {
   Body,
   Controller,
@@ -320,6 +483,7 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
@@ -337,9 +501,8 @@ import { Request } from 'express';
 
 class QueryResponseDto {
   @ApiProperty({
-    description: 'The response message from Bele AI assistant',
-    example:
-      "I understand you're asking about our mobile plans. We offer plans from $16.14/month with 5GB up to $59.89/month with 150GB. Is there anything else I can help with?",
+    description: 'The response message from AI assistant',
+    example: 'Kiwi here, your AI assistant for Flying Kiwi...',
   })
   message: string;
 
@@ -359,18 +522,16 @@ class QueryResponseDto {
 
 class EscalateResponseDto {
   @ApiProperty({
-    description: 'Confirmation that issue has been escalated to live agent',
-    example:
-      "Your issue has been escalated to a live agent. We'll contact you soon!",
+    description: 'Confirmation that issue has been escalated',
+    example: 'Your issue has been escalated to a live agent...',
   })
   message: string;
 }
 
 class WelcomeResponseDto {
   @ApiProperty({
-    description: 'Welcome message from Bele AI',
-    example:
-      "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
+    description: 'Welcome message from AI',
+    example: "Welcome to Flying Kiwi's Chatbot! I'm Kiwi...",
   })
   message: string;
 }
@@ -389,21 +550,20 @@ class ErrorResponseDto {
   error: string;
 }
 
-@ApiTags('Chat AI (Bele)')
+@ApiTags('Chat AI')
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post('query')
   @ApiOperation({
-    summary: 'Send message to Bele AI and receive response',
-    description:
-      'Process user query using JUSTmobile knowledge base. Maintains conversation context via session_id.',
+    summary: 'Send message to AI and receive response',
+    description: 'Process user query. Maintains context via session_id.',
   })
   @ApiBody({ type: QueryRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Successful AI response with conversation context',
+    description: 'Successful AI response',
     type: QueryResponseDto,
   })
   @ApiBadRequestResponse({
@@ -431,17 +591,16 @@ export class ChatController {
   @Post('escalate')
   @ApiOperation({
     summary: 'Escalate unresolved issue to live support agent',
-    description:
-      'Transfers conversation to human agent with full context. Requires valid email format.',
+    description: 'Transfers conversation to human agent with full context.',
   })
   @ApiBody({ type: EscalationRequestDto })
   @ApiResponse({
     status: 200,
-    description: 'Issue successfully escalated to live agent',
+    description: 'Issue successfully escalated',
     type: EscalateResponseDto,
   })
   @ApiBadRequestResponse({
-    description: 'Invalid session, email format, or missing required fields',
+    description: 'Invalid session, email format, or missing fields',
     type: ErrorResponseDto,
   })
   @ApiInternalServerErrorResponse({
@@ -462,16 +621,13 @@ export class ChatController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get welcome message from Bele AI' })
+  @ApiOperation({ summary: 'Get welcome message from AI' })
   @ApiResponse({
     status: 200,
     description: 'Initial greeting from chatbot',
     type: WelcomeResponseDto,
   })
-  async welcome() {
-    return {
-      message:
-        "Welcome to JUSTmobile's Chatbot! I'm Bele, here to help 24/7. How can I assist you?",
-    };
+  async welcome(@Query('brand') brand?: string) {
+    return this.chatService.getWelcomeMessage(brand);
   }
 }

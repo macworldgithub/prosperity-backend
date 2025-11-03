@@ -62,13 +62,80 @@
 //   @IsString()
 //   issue_description: string;
 // }
+// import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+// import { ApiProperty } from '@nestjs/swagger';
+
+// export class QueryRequestDto {
+//   @ApiProperty({
+//     description: 'Customer query or message to Bele AI',
+//     example: 'Why is my first bill higher than expected?',
+//     minLength: 1,
+//   })
+//   @IsNotEmpty()
+//   @IsString()
+//   query: string;
+
+//   @ApiProperty({
+//     description: 'Session ID to maintain conversation context (optional for new conversations)',
+//     example: '123e4567-e89b-12d3-a456-426614174000',
+//     required: false,
+//   })
+//   @IsOptional()
+//   @IsString()
+//   session_id?: string;
+// }
+
+// export class EscalationRequestDto {
+//   @ApiProperty({
+//     description: 'Active session ID requiring escalation',
+//     example: '123e4567-e89b-12d3-a456-426614174000',
+//     minLength: 1,
+//   })
+//   @IsNotEmpty()
+//   @IsString()
+//   session_id: string;
+
+//   @ApiProperty({
+//     description: 'Customer\'s full name',
+//     example: 'Jane Smith',
+//     minLength: 1,
+//   })
+//   @IsNotEmpty()
+//   @IsString()
+//   full_name: string;
+
+//   @ApiProperty({
+//     description: 'Customer\'s email address (must be valid format)',
+//     example: 'jane.smith@email.com',
+//   })
+//   @IsNotEmpty()
+//   @IsEmail()
+//   email: string;
+
+//   @ApiProperty({
+//     description: 'Customer\'s phone number (Australian format preferred)',
+//     example: '+61 400 123 456',
+//   })
+//   @IsNotEmpty()
+//   @IsString()
+//   phone: string;
+
+//   @ApiProperty({
+//     description: 'Brief description of the unresolved issue',
+//     example: 'Billing dispute - double charged for first month',
+//     minLength: 5,
+//   })
+//   @IsNotEmpty()
+//   @IsString()
+//   issue_description: string;
+// }
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class QueryRequestDto {
   @ApiProperty({
     description: 'Customer query or message to Bele AI',
-    example: 'Why is my first bill higher than expected?',
+    example: 'Who are you?',
     minLength: 1,
   })
   @IsNotEmpty()
@@ -76,13 +143,24 @@ export class QueryRequestDto {
   query: string;
 
   @ApiProperty({
-    description: 'Session ID to maintain conversation context (optional for new conversations)',
+    description:
+      'Session ID to maintain conversation context (optional for new conversations)',
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,
   })
   @IsOptional()
   @IsString()
   session_id?: string;
+
+  @ApiProperty({
+    description:
+      'Brand context (e.g., "justmobile", "flying-kiwi", "prosperity-tech")',
+    example: 'flying-kiwi',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  brand?: string;
 }
 
 export class EscalationRequestDto {
@@ -96,7 +174,7 @@ export class EscalationRequestDto {
   session_id: string;
 
   @ApiProperty({
-    description: 'Customer\'s full name',
+    description: "Customer's full name",
     example: 'Jane Smith',
     minLength: 1,
   })
@@ -105,7 +183,7 @@ export class EscalationRequestDto {
   full_name: string;
 
   @ApiProperty({
-    description: 'Customer\'s email address (must be valid format)',
+    description: "Customer's email address (must be valid format)",
     example: 'jane.smith@email.com',
   })
   @IsNotEmpty()
@@ -113,7 +191,7 @@ export class EscalationRequestDto {
   email: string;
 
   @ApiProperty({
-    description: 'Customer\'s phone number (Australian format preferred)',
+    description: "Customer's phone number (Australian format preferred)",
     example: '+61 400 123 456',
   })
   @IsNotEmpty()
