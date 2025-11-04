@@ -576,9 +576,10 @@ export class ChatController {
   })
   async queryChat(@Body() request: QueryRequestDto) {
     try {
-      const { message, session_id, suggestions } =
+      //@ts-ignore
+      const { message, session_id, suggestions ,custNo } =
         await this.chatService.processQuery(request);
-      return { message, session_id, suggestions };
+      return { message, session_id, suggestions ,custNo};
     } catch (e) {
       if (e instanceof HttpException) throw e;
       throw new HttpException(

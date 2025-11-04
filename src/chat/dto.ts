@@ -161,6 +161,8 @@ export class QueryRequestDto {
   @IsOptional()
   @IsString()
   brand?: string;
+
+ 
 }
 
 export class EscalationRequestDto {
