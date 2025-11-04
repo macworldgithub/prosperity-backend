@@ -816,6 +816,8 @@ ${brand?.name || 'Bele'} AI Assistant
       };
     }
 
+    let custNo: string = 'null';
+
     const state = this.conversationData[sessionId].state;
     state.error = null;
 
@@ -995,7 +997,7 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
           try {
             const toolResult = JSON.parse(lastToolResponse.content);
             if (toolResult.customer?.custNo) {
-              const custNo = toolResult.customer.custNo;
+              custNo = toolResult.customer.custNo;
               reply = `${reply}\n\nYour account is set up! Your **Customer ID is ${custNo}**. Keep this safe .`;
               this.conversationData[sessionId].state.custNo = custNo;
             }
@@ -1005,7 +1007,8 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
         }
       }
       this.conversationData[sessionId].history = messages.slice(-15);
-      return { reply, suggestions };
+      //@ts-ignore
+      return { reply, suggestions, custNo };
     } catch (e) {
       this.logger.error(`Grok API error: ${e.message}`);
       const fallback = 'Sorry, I encountered an issue. Please try again.';
@@ -1035,9 +1038,13 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
     const brandConfig =
       this.BRAND_CONFIG[brandKey] || this.BRAND_CONFIG['justmobile'];
     this.conversationData[sessionId].state.brand = brandConfig;
-
-    const { reply, suggestions } = await this.askGrok(sessionId, request.query);
-    return { message: reply, session_id: sessionId, suggestions };
+    //@ts-ignore
+    const { reply, suggestions, custNo } = await this.askGrok(
+      sessionId,
+      request.query,
+    );
+    //@ts-ignore
+    return { message: reply, session_id: sessionId, suggestions, custNo };
   }
 
   async processEscalation(request: EscalationRequestDto): Promise<string> {
