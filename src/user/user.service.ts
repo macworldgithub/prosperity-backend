@@ -103,7 +103,8 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const salt = await bcrypt.genSalt();
     const hashedPin = await bcrypt.hash(createUserDto.pin, salt);
-
+    console.log(createUserDto.pin)
+    console.log(hashedPin)
     const user = new this.userModel({
       ...createUserDto,
       pin: hashedPin,

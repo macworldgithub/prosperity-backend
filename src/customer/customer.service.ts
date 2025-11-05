@@ -492,18 +492,19 @@ export class CustomerService {
           },
         },
       );
-    } else {
-      // Create new User with minimal required fields
-      const tempPin = await bcrypt.hash('0000', await bcrypt.genSalt());
-      await this.userModel.create({
-        name: `${dto.customer.firstName} ${dto.customer.surname}`,
-        email: dto.customer.email,
-        custNo: response.return.custNo,
-        pin: tempPin,
-        biometricEn暫Enrolled: false,
-        ...addressPayload,
-      });
-    }
+    } 
+    // else {
+    //   // Create new User with minimal required fields
+    //   const tempPin = await bcrypt.hash('0000', await bcrypt.genSalt());
+    //   await this.userModel.create({
+    //     name: `${dto.customer.firstName} ${dto.customer.surname}`,
+    //     email: dto.customer.email,
+    //     custNo: response.return.custNo,
+    //     pin: tempPin,
+    //     biometricEn暫Enrolled: false,
+    //     ...addressPayload,
+    //   });
+    // }
 
     return response;
   }
