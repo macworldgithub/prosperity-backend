@@ -20,6 +20,7 @@ export class QrCodeService {
         response.error.message || 'Failed to generate QR code',
         400,
       );
+      console.log(response)
     return response;
   }
 
@@ -37,6 +38,8 @@ export class QrCodeService {
         response.error.message || 'Failed to generate QR code from order ID',
         400,
       );
+            console.log(response)
+
     return response;
   }
 }
