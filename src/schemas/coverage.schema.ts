@@ -5,7 +5,8 @@ import { Document, Types } from 'mongoose';
 export class Coverage extends Document {
   declare _id: Types.ObjectId;
 
-  @Prop({ unique: true })
+  // removed unique: true so multiple documents can share the same zip
+  @Prop()
   zip: string;
 
   @Prop()
@@ -25,3 +26,6 @@ export class Coverage extends Document {
 }
 
 export const CoverageSchema = SchemaFactory.createForClass(Coverage);
+
+// performance: non-unique index on zip
+CoverageSchema.index({ zip: 1 });

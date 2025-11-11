@@ -6,10 +6,14 @@ import { CreateCoverageDto } from './dto/create-coverage.dto';
 
 @Injectable()
 export class CoverageService {
-  constructor(@InjectModel('Coverage') private coverageModel: Model<Coverage>) {}
+  // prefer injecting by model name: InjectModel(Coverage.name) works if you registered it that way
+  constructor(
+    @InjectModel(Coverage.name) private coverageModel: Model<Coverage>,
+  ) {}
 
-  async findByZip(zip: string): Promise<Coverage | null> {
-    return this.coverageModel.findOne({ zip });
+  // return multiple matches
+  async findByZip(zip: string): Promise<Coverage[]> {
+    return this.coverageModel.find({ zip }).exec();
   }
 
   async create(createCoverageDto: CreateCoverageDto): Promise<Coverage> {
