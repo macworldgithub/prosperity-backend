@@ -197,7 +197,8 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ApiProperty } from '@nestjs/swagger';
-
+import { ApiNotFoundResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse } from '@nestjs/swagger';
 // ---------------------------------------------------------------
 // Generic success response schema
 // ---------------------------------------------------------------
@@ -306,16 +307,65 @@ export class OrderController {
   // -----------------------------------------------------------------
   // 4. PATCH /api/v1/orders/:custNo/plan   (dynamic – custNo)
   // -----------------------------------------------------------------
+  // @Patch(':custNo/plan')
+  // @ApiOperation({ summary: 'Update customer plan' })
+  // @ApiParam({ name: 'custNo', example: 'CUST12345' })
+  // @ApiBody({ type: UpdatePlanDto })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Plan updated',
+  //   content: {
+  //     'application/json': { example: UpdatePlanDto.ResponseExample },
+  //   },
+  // })
+  // async updatePlan(
+  //   @Param('custNo') custNo: string,
+  //   @Body() dto: UpdatePlanDto,
+  // ) {
+  //   const result = await this.orderService.updatePlan(dto, custNo);
+  //   return formatResponse(
+  //     'return' in result ? result.return : result,
+  //     'Plan updated successfully',
+  //   );
+  // }
   @Patch(':custNo/plan')
-  @ApiOperation({ summary: 'Update customer plan' })
-  @ApiParam({ name: 'custNo', example: 'CUST12345' })
-  @ApiBody({ type: UpdatePlanDto })
+  @ApiOperation({
+    summary: 'Update a customer’s plan',
+    description:
+      'Changes the plan for a specific subscription line. `custNo` is the customer identifier, `planNo` is the new plan code, and `lineSeqNo` identifies the line (default **1**).',
+  })
+  @ApiParam({
+    name: 'custNo',
+    type: String,
+    description: 'Customer number (e.g. CUST12345)',
+    example: 'CUST12345',
+  })
+  @ApiBody({
+    type: UpdatePlanDto,
+    description: 'Payload containing the new plan and optional line sequence',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Plan updated',
+    description: 'Plan updated successfully',
     content: {
-      'application/json': { example: UpdatePlanDto.ResponseExample },
+      'application/json': {
+        example: UpdatePlanDto.ResponseExample,
+      },
     },
+  })
+  @ApiBadRequestResponse({
+    description: 'Missing required fields or invalid plan/line',
+    content: {
+      'application/json': {
+        example: {
+          success: false,
+          message: 'custNo, planNo, lineSeqNo required',
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Customer or line not found (propagated from SOAP service)',
   })
   async updatePlan(
     @Param('custNo') custNo: string,
@@ -327,7 +377,6 @@ export class OrderController {
       'Plan updated successfully',
     );
   }
-
   // -----------------------------------------------------------------
   // 5. GET /api/v1/orders/:orderId   (dynamic – orderId)  <-- last
   // -----------------------------------------------------------------
