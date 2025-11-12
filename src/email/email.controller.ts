@@ -1,84 +1,44 @@
-// import { Controller, Post, Body } from '@nestjs/common';
-// import { EmailService } from './email.service';
-// import { formatResponse } from '../common/utils/response-formatter';
-// import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-
-// @ApiTags('emails')
-// @Controller('api/v1/emails')
-// export class EmailController {
-//   constructor(private emailService: EmailService) {}
-
-//   @Post('template')
-//   @ApiOperation({ summary: 'Send email using SendGrid template' })
-//   @ApiBody({
-//     type: Object,
-//     description:
-//       '{ toEmail: string, templateId: string, templateData: object, fromEmail: string }',
-//   })
-//   @ApiResponse({ status: 200, description: 'Email sent successfully' })
-//   async sendTemplateEmail(
-//     @Body()
-//     body: {
-//       toEmail: string;
-//       templateId: string;
-//       templateData: object;
-//       fromEmail?: string;
-//     },
-//   ) {
-//     const result = await this.emailService.sendTemplateEmail(
-//       body.toEmail,
-//       body.templateId,
-//       body.templateData,
-//       body.fromEmail,
-//     );
-//     return formatResponse(result, 'Email sent successfully');
-//   }
-
-//   @Post('template/welcome')
-//   @ApiOperation({ summary: 'Send welcome email using SendGrid template' })
-//   @ApiBody({
-//     type: Object,
-//     description: '{ toEmail: string, templateData: object }',
-//   })
-//   @ApiResponse({ status: 200, description: 'Welcome Email sent successfully' })
-//   async sendWelcomeTemplateEmail(
-//     @Body() body: { toEmail: string; templateData: object },
-//   ) {
-//     const result = await this.emailService.sendWelcomeTemplateEmail(
-//       body.toEmail,
-//       body.templateData,
-//     );
-//     return formatResponse(result, 'Welcome Email sent successfully');
-//   }
-// }
-// src/email/email.controller.ts
-import { Controller, Post, Body } from '@nestjs/common';
-import { EmailService } from './email.service';
-import { formatResponse } from '../common/utils/response-formatter';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { EmailService } from './email.service';
+import { SendTemplateEmailDto } from './dto/send-template-email.dto';
+import { SendWelcomeEmailDto } from './dto/send-welcome-email.dto';
+import { formatResponse } from '../common/utils/response-formatter';
 
-@ApiTags('emails')
+@ApiTags('Emails')
 @Controller('api/v1/emails')
 export class EmailController {
-  constructor(private emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService) {}
 
   @Post('template')
-  @ApiOperation({ summary: 'Send email using SendGrid template' })
-  @ApiBody({
-    type: Object,
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send email using a SendGrid dynamic template',
     description:
-      '{ toEmail: string, templateId: string, templateData: object, fromEmail: string }',
+      'Sends an email using SendGrid with a dynamic template and data substitution.',
   })
-  @ApiResponse({ status: 200, description: 'Email sent successfully' })
-  async sendTemplateEmail(
-    @Body()
-    body: {
-      toEmail: string;
-      templateId: string;
-      templateData: object;
-      fromEmail?: string;
+  @ApiBody({ type: SendTemplateEmailDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Email sent successfully',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          success: true,
+          messageId: '1234567890',
+          status: 202,
+        },
+        message: 'Email sent successfully',
+      },
     },
-  ) {
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({
+    status: 500,
+    description: 'SendGrid API error or misconfiguration',
+  })
+  async sendTemplateEmail(@Body() body: SendTemplateEmailDto) {
     const result = await this.emailService.sendTemplateEmail(
       body.toEmail,
       body.templateId,
@@ -89,15 +49,34 @@ export class EmailController {
   }
 
   @Post('template/welcome')
-  @ApiOperation({ summary: 'Send welcome email using SendGrid template' })
-  @ApiBody({
-    type: Object,
-    description: '{ toEmail: string, templateData: object }',
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send welcome email using pre-configured template',
+    description:
+      'Sends a welcome email using the configured SendGrid welcome template ID.',
   })
-  @ApiResponse({ status: 200, description: 'Welcome Email sent successfully' })
-  async sendWelcomeTemplateEmail(
-    @Body() body: { toEmail: string; templateData: object },
-  ) {
+  @ApiBody({ type: SendWelcomeEmailDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Welcome email sent successfully',
+    schema: {
+      example: {
+        success: true,
+        data: {
+          success: true,
+          messageId: '9876543210',
+          status: 202,
+        },
+        message: 'Welcome Email sent successfully',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({
+    status: 500,
+    description: 'Template ID not configured or SendGrid error',
+  })
+  async sendWelcomeTemplateEmail(@Body() body: SendWelcomeEmailDto) {
     const result = await this.emailService.sendWelcomeTemplateEmail(
       body.toEmail,
       body.templateData,
