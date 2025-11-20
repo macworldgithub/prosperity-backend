@@ -8,7 +8,7 @@ import { LocalStrategy } from './local.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { AddressModule } from '../address/address.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
+import { EmailService } from 'src/common/services/email.service';
 @Module({
   imports: [
     UserModule,
@@ -29,7 +29,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService],
   controllers: [AuthController],
   exports: [AuthService],
 })

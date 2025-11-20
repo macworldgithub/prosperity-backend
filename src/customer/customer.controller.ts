@@ -720,7 +720,25 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { SoapResponse } from '../common/types/soap-response.type';
+import { ApiQuery } from '@nestjs/swagger';
+import { Query } from '@nestjs/common';
+import { AppError } from 'src/common/errors/app-error';
+interface UnbilledCallSummary {
+  csn?: string;
+  department?: string;
+  groupName?: string;
+  groupNo?: string;
+  lineseqno?: string;
+  name?: string;
+  totalCalls?: string;
+  totalCharge?: string;
+  totalOther?: string;
+  totalVSPCost?: string;
+}
 
+interface UnbilledCallsSummaryResponse {
+  calls?: UnbilledCallSummary[];
+}
 @ApiTags('customers')
 @Controller('api/v1/customers')
 export class CustomerController {
@@ -888,7 +906,75 @@ export class CustomerController {
       'Customer balance retrieved successfully',
     );
   }
+  @Get(':custNo/balance/mobile')
+  @ApiOperation({
+    summary: 'Get mobile service allowances (raw UtbMobile response)',
+    description: 'Returns exact queryBalance response from UtbMobile',
+  })
+  @ApiParam({ name: 'custNo', example: 'CUST123456' })
+  @ApiQuery({ name: 'lineSeqNo', required: false, example: '1' })
+  @ApiResponse({
+    status: 200,
+    description: 'Raw mobile balance from UtbMobile',
+  })
+  async getMobileBalance(
+    @Param('custNo') custNo: string,
+    @Query('lineSeqNo') lineSeqNo?: string,
+  ) {
+    const result = await this.customerService.getMobileBalance(
+      custNo,
+      lineSeqNo,
+    );
 
+    const payload = 'return' in result ? result.return : result;
+
+    return formatResponse(payload, 'Mobile balance retrieved successfully');
+  }
+
+  @Get(':custNo/unbilled-summary')
+  @ApiOperation({
+    summary: 'Get unbilled calls summary (raw UtbCall response)',
+    description: 'Returns exact getUnbilledCallsSummary response from UtbCall',
+  })
+  @ApiParam({ name: 'custNo', example: 'CUST351128' })
+  @ApiResponse({
+    status: 200,
+    description: 'Raw unbilled summary from UtbCall',
+  })
+  async getUnbilledCallsSummary(@Param('custNo') custNo: string) {
+    const result = await this.customerService.getUnbilledCallsSummary(custNo);
+
+    const payload = 'return' in result ? result.return : result;
+
+    return formatResponse(
+      payload,
+      'Unbilled calls summary retrieved successfully',
+    );
+  }
+  @Get(':custNo/unbilled-detail')
+  @ApiOperation({
+    summary: 'Get detailed unbilled calls (raw UtbCall response)',
+    description: 'Returns exact getUnbilledCallsDetail response from UtbCall',
+  })
+  @ApiParam({ name: 'custNo', example: 'CUST351128' })
+  @ApiQuery({ name: 'csn', required: true, example: '9000000001' })
+  @ApiResponse({ status: 200, description: 'Raw unbilled detail from UtbCall' })
+  async getUnbilledCallsDetail(
+    @Param('custNo') custNo: string,
+    @Query('csn') csn: string,
+  ) {
+    const result = await this.customerService.getUnbilledCallsDetail(
+      custNo,
+      csn,
+    );
+
+    const payload = 'return' in result ? result.return : result;
+
+    return formatResponse(
+      payload,
+      'Unbilled call details retrieved successfully',
+    );
+  }
   @Delete(':custNo')
   @HttpCode(200)
   @ApiOperation({

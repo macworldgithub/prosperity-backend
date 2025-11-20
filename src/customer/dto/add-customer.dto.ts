@@ -251,6 +251,13 @@ class CustomerData {
   @IsOptional()
   @IsString()
   custAuthorityNo?: string;
+  @ApiProperty({
+    example: 'AGT001',
+    description: 'Agent ID who created this customer',
+  })
+  @IsString()
+  @IsOptional() // or remove @IsOptional() if you want it required
+  agent_id?: string;
 }
 
 export class AddCustomerDto {

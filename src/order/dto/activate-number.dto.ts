@@ -62,6 +62,15 @@ export class ActivateNumberDto {
   @IsString()
   simNo?: string;
 
+  // ADD THIS
+  @ApiPropertyOptional({
+    description: 'Agent ID who is activating this number',
+    example: 'AGT001',
+  })
+  @IsOptional()
+  @IsString()
+  agentId?: string;
+
   // Hidden from Swagger input but used for response
   static ResponseExample = {
     success: true,

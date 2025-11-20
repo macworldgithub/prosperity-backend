@@ -406,7 +406,7 @@ import { AppError } from '../common/errors/app-error';
 import { AddCustomerDto } from './dto/add-customer.dto';
 import { SoapResponse } from '../common/types/soap-response.type';
 import * as bcrypt from 'bcrypt';
-
+import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
 interface AddCustomerResponse {
   custNo: string;
 }
@@ -419,11 +419,45 @@ interface BalanceResponse {
 interface ServicesResponse {
   services?: any[];
 }
+interface UnbilledCallSummary {
+  csn?: string;
+  department?: string;
+  groupName?: string;
+  groupNo?: string;
+  lineseqno?: string;
+  name?: string;
+  totalCalls?: string;
+  totalCharge?: string;
+  totalOther?: string;
+  totalVSPCost?: string;
+}
 
+interface UnbilledCallsSummaryResponse {
+  calls?: UnbilledCallSummary[];
+}
+interface UnbilledCallDetailItem {
+  actualTariffCode?: string;
+  charge?: string;
+  csn?: string;
+  dateEnd?: string;
+  dateStart?: string;
+  detail?: string;
+  duration?: string;
+  itemType?: string;
+  lineSeqNo?: string;
+  origin?: string;
+  tariffCode?: string;
+  vspCost?: string;
+}
+
+interface UnbilledCallsDetailResponse {
+  calls?: UnbilledCallDetailItem[];
+}
 @Injectable()
 export class CustomerService {
   constructor(
     private apiClient: ApiClientService,
+    private googleSheetsService: GoogleSheetsService, // Add this
     @InjectModel('Customer') private customerModel: Model<Customer>,
     @InjectModel('User') private userModel: Model<User>,
   ) {}
@@ -431,11 +465,10 @@ export class CustomerService {
   async addCustomer(
     dto: AddCustomerDto,
   ): Promise<SoapResponse<AddCustomerResponse>> {
-    // Normalize preferred contact for the SOAP backend (it expects uppercase)
     const prefContact = (
       dto.customer.preferredContactMethod || 'Email'
     ).toUpperCase();
-
+    dto.customer.agent_id = '923';
     const response = await this.apiClient.soapCall<AddCustomerResponse>(
       '/UtbCustomer',
       {
@@ -450,6 +483,7 @@ export class CustomerService {
           dob_port: dto.customer.dob_port,
           custAuthorityType: dto.customer.custAuthorityType,
           custAuthorityNo: dto.customer.custAuthorityNo,
+          agent_id: dto.customer.agent_id,
         },
       },
       'addCustomer',
@@ -462,53 +496,87 @@ export class CustomerService {
       );
     }
 
-    // === 1. Persist minimal customer data locally ===
+    const custNo = response.return.custNo;
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const updatedAt = now.toISOString();
+
+    // EXACT 34-column order (A to AH) — using only real fields from your DTO
+    const sheetRow = [
+      createdAt, // A: createdAt
+      updatedAt, // B: updatedAt
+      dto.customer.agent_id || '', // C: agentId
+      '', // D: simType → filled on activation
+      '', // E: simNumber → ICCID
+      'New', // F: New/Existing → default New
+      '', // G: newNumber → filled on activation
+      '', // H: existingNumber
+      '', // I: availableNumbers
+      dto.customer.firstName, // J: firstName
+      dto.customer.surname, // K: surname
+      dto.customer.email, // L: email
+      dto.customer.sal || '', // M: sal
+      dto.customer.preferredContactMethod || 'Email', // N: preferredContactMethod
+      dto.customer.dob_port || dto.customer.dob || '', // O: dob
+      'Individual', // P: custType → hardcoded for now
+      dto.customer.suburb, // Q: suburb
+      dto.customer.state, // R: state
+      dto.customer.postcode, // S: postcode
+      dto.customer.phone, // T: phoneNumber
+      '', // U: selectedPlan → filled on activation
+      '', // V: isUpgraded
+      '', // W: provider → only on port-in
+      '', // X: paymentToken → not in your flow
+      'Yes', // Y: isNumberVerified → assumed
+      '', // Z: selectedNumber → temporary
+      custNo, // AA: custNo
+      '', // AB: portingNumber → filled on port-in
+      dto.customer.custAuthorityNo || '', // AC: arn
+      dto.customer.dob_port || '', // AD: dob_port
+      '', // AE: orderNo → filled on activation
+      '', // AF: Activated?
+      '', // AG: Added to Master Sheet?
+      '', // AH: Cx Informed?
+    ];
+
+    // Save locally
     const savedCustomer = await this.customerModel.create({
-      custNo: response.return.custNo,
+      custNo,
       ...dto.customer,
       orderNotificationEmail:
         dto.customer.orderNotificationEmail ?? dto.customer.email,
+      agent_id: dto.customer.agent_id,
     });
 
-    // === 2. Sync address to User (create or update) ===
-    const addressPayload = {
-      street: dto.customer.address,
-      suburb: dto.customer.suburb,
-      state: dto.customer.state,
-      postcode: dto.customer.postcode,
-    };
-
+    // Sync address to User collection
     const existingUser = await this.userModel.findOne({
       email: dto.customer.email,
     });
-
     if (existingUser) {
       await this.userModel.updateOne(
         { _id: existingUser._id },
         {
           $set: {
-            ...addressPayload,
-            custNo: response.return.custNo,
+            street: dto.customer.address,
+            suburb: dto.customer.suburb,
+            state: dto.customer.state,
+            postcode: dto.customer.postcode,
+            custNo,
           },
         },
       );
-    } 
-    // else {
-    //   // Create new User with minimal required fields
-    //   const tempPin = await bcrypt.hash('0000', await bcrypt.genSalt());
-    //   await this.userModel.create({
-    //     name: `${dto.customer.firstName} ${dto.customer.surname}`,
-    //     email: dto.customer.email,
-    //     custNo: response.return.custNo,
-    //     pin: tempPin,
-    //     biometricEn暫Enrolled: false,
-    //     ...addressPayload,
-    //   });
-    // }
+    }
+
+    // Fire-and-forget Google Sheets append
+    this.googleSheetsService.appendCustomer(sheetRow).catch((err) => {
+      console.error('Failed to append to Google Sheets', {
+        custNo,
+        error: err.message,
+      });
+    });
 
     return response;
   }
-
   async getServices(custNo: string): Promise<SoapResponse<ServicesResponse>> {
     if (!custNo) throw new AppError('Customer number required', 400);
     return this.apiClient.soapCall<ServicesResponse>(
@@ -560,5 +628,116 @@ export class CustomerService {
     await this.customerModel.deleteOne({ custNo });
     await this.userModel.updateOne({ custNo }, { $unset: { custNo: '' } }); // optional: unlink
     return result;
+  }
+  // Add to your CustomerService class
+  async getMobileBalance(
+    custNo: string,
+    lineSeqNo: string = '1',
+  ): Promise<SoapResponse<any>> {
+    if (!custNo) {
+      throw new AppError('Customer number required', 400);
+    }
+
+    // Clean custNo (remove CUST prefix if present - backend expects numeric)
+    const numericCustNo = parseInt(custNo.replace(/\D+/g, ''), 10);
+    if (isNaN(numericCustNo)) {
+      throw new AppError('Invalid customer number format', 400);
+    }
+
+    const response = await this.apiClient.soapCall<any>(
+      '/UtbMobile',
+      {
+        queryBalanceRequest: {
+          custNo: numericCustNo,
+          lineSeqNo: parseInt(lineSeqNo, 10),
+        },
+      },
+      'queryBalance',
+    );
+
+    // Proper handling of your existing SoapResponse union type
+    if ('error' in response) {
+      throw new AppError(
+        response.error.message || 'Failed to fetch mobile balance',
+        400,
+      );
+    }
+
+    // Success case: response is { return: { success: true, queryItems: [...], ... } }
+    const result = 'return' in response ? response.return : response;
+
+    if (!result.success) {
+      throw new AppError(
+        result.errorMessage || 'Mobile balance query failed',
+        400,
+      );
+    }
+
+    return { return: result }; // wrap back consistently if needed, or just return result
+  }
+  async getUnbilledCallsSummary(
+    custNo: string,
+  ): Promise<SoapResponse<UnbilledCallsSummaryResponse>> {
+    if (!custNo) {
+      throw new AppError('Customer number required', 400);
+    }
+
+    // Clean to numeric if prefixed with CUST
+    const numericCustNo = parseInt(custNo.replace(/\D+/g, ''), 10);
+    if (isNaN(numericCustNo)) {
+      throw new AppError('Invalid customer number format', 400);
+    }
+
+    const response =
+      await this.apiClient.soapCall<UnbilledCallsSummaryResponse>(
+        '/UtbCall',
+        { custNo: numericCustNo },
+        'getUnbilledCallsSummary',
+      );
+    console.log(response);
+    // Unified error handling (matches your existing pattern)
+    if ('error' in response) {
+      throw new AppError(
+        response.error.message || 'Failed to fetch unbilled calls summary',
+        400,
+      );
+    }
+
+    return response;
+  }
+  async getUnbilledCallsDetail(
+    custNo: string,
+    csn: string,
+  ): Promise<SoapResponse<UnbilledCallsDetailResponse>> {
+    if (!custNo || !csn) {
+      throw new AppError(
+        'Customer number and CSN (service number) are required',
+        400,
+      );
+    }
+
+    const numericCustNo = parseInt(custNo.replace(/\D+/g, ''), 10);
+    if (isNaN(numericCustNo)) {
+      throw new AppError('Invalid customer number format', 400);
+    }
+
+    const response = await this.apiClient.soapCall<UnbilledCallsDetailResponse>(
+      '/UtbCall',
+      {
+        custNo: numericCustNo,
+        csn: csn.trim(),
+      },
+      'getUnbilledCallsDetail',
+    );
+    console.log('Unbilled Calls Detail Response:', response);
+
+    if ('error' in response) {
+      throw new AppError(
+        response.error.message || 'Failed to fetch unbilled call details',
+        400,
+      );
+    }
+
+    return response;
   }
 }

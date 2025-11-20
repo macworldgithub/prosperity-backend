@@ -103,8 +103,8 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const salt = await bcrypt.genSalt();
     const hashedPin = await bcrypt.hash(createUserDto.pin, salt);
-    console.log(createUserDto.pin)
-    console.log(hashedPin)
+    console.log(createUserDto.pin);
+    console.log(hashedPin);
     const user = new this.userModel({
       ...createUserDto,
       pin: hashedPin,
@@ -121,7 +121,11 @@ export class UserService {
   async findByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ email }).populate('billId');
   }
+  // src/user/user.service.ts
 
+  async findByCustNo(custNo: string): Promise<User | null> {
+    return this.userModel.findOne({ custNo }).populate('billId').exec();
+  }
   async findById(id: string): Promise<User | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.userModel.findById(id).populate('billId');

@@ -228,6 +228,8 @@ export class Customer extends Document {
 
   @Prop()
   custAuthorityNo?: string;
+  // In your Customer schema
+  agent_id: { type: String; required: false };
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);

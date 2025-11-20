@@ -74,6 +74,14 @@ export class ActivatePortNumberDto {
   @IsOptional()
   @IsString()
   simNo?: string;
+  // ADD THIS
+  @ApiPropertyOptional({
+    description: 'Agent ID who is activating this number',
+    example: 'AGT001',
+  })
+  @IsOptional()
+  @IsString()
+  agentId?: string;
 
   static ResponseExample = {
     success: true,
