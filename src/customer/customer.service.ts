@@ -468,7 +468,7 @@ export class CustomerService {
     const prefContact = (
       dto.customer.preferredContactMethod || 'Email'
     ).toUpperCase();
-    dto.customer.agent_id = '923';
+    dto.customer.agent_id = '713';
     const response = await this.apiClient.soapCall<AddCustomerResponse>(
       '/UtbCustomer',
       {
