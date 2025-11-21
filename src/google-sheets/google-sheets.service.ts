@@ -406,7 +406,7 @@ export class GoogleSheetsService implements OnModuleInit {
       if (updates.paymentTokenId) {
         row[COL.PAYMENT_TOKEN] = updates.paymentTokenId;
       }
-      row[COL.PROVIDER] = 'FlyingKiwi';
+      row[COL.PROVIDER] = 'Propserity Tech';
       row[COL.UPDATED_AT] = new Date().toISOString();
 
       await this.sheets.spreadsheets.values.update({
