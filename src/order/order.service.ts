@@ -1423,7 +1423,7 @@ export class OrderService {
 
     const isEsim = !dto.simNo;
     const simType = isEsim ? 'eSIM' : 'Physical SIM';
-    dto.agentId = '923';
+    dto.agentId = '713';
     const requestBody = {
       createRequest: {
         custNo: dto.cust.custNo,
@@ -1640,7 +1640,7 @@ export class OrderService {
       custNo,
       msn: 'N/A',
       planNo: dto.planNo,
-      agentId: '923',
+      agentId: '713',
       status: 'PENDING',
       orderType: 'PLAN_CHANGE',
       orderAction: 'CHANGE_WME_PLAN',
