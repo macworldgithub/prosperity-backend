@@ -316,7 +316,7 @@ export class EmailService {
 
             <div class="pin-box">${newPin}</div>
 
-            <a href="https://flyingkiwi.omnisuiteai.com/login" class="btn">
+            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
               Log In Now
             </a>
 
@@ -403,7 +403,7 @@ export class EmailService {
               If you didn't make this change, please secure your account immediately.
             </p>
 
-            <a href="https://flyingkiwi.omnisuiteai.com/login" class="btn">
+            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
               Go to Login
             </a>
 
