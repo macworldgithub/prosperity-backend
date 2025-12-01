@@ -316,7 +316,10 @@ export class EmailService {
 
             <div class="pin-box">${newPin}</div>
 
-            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
+           
+
+            <!-- Login Button -->
+            <a href="https://flyingkiwi.omnisuiteai.com/login" class="btn">
               Log In Now
             </a>
 
