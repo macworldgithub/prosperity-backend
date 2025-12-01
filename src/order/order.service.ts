@@ -1519,6 +1519,7 @@ export class OrderService {
     const msn = dto.number.startsWith('0') ? dto.number : '0' + dto.number;
     const isEsim = !dto.simNo;
     const simType = isEsim ? 'eSIM' : 'Physical SIM';
+        dto.agentId = '713';
 
     const requestBody = {
       createRequest: {
@@ -1528,10 +1529,14 @@ export class OrderService {
         orderItems: {
           wmePortInReqItem: {
             lineType: 'R',
+            lineName: 'SimplyBig Unlimited',
+
             planNo: dto.planNo,
+            agentId: dto.agentId,
+
             orderItemAddress: {
-              locality: dto.cust.suburb || 'BUDDINA',
-              postcode: dto.cust.postcode || '4575',
+              locality: dto.cust.suburb ,
+              postcode: dto.cust.postcode ,
               streetName: dto.cust.address.split(',')[0]?.trim() || '',
               additionalAddress: dto.cust.address.substring(0, 10),
             },
