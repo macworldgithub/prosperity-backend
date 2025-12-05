@@ -429,7 +429,7 @@ export class EmailService {
       : '';
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      to: 'karimjawwad09@gmail.com, brian@keayes.com',
+      to: 'brian@bele.ai, lee@bele.ai',
       subject: `Failure in ${functionName}`,
       html: `
       <!DOCTYPE html>
