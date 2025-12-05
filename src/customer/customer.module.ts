@@ -23,6 +23,8 @@ import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
+import { EmailService } from 'src/common/services/email.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -32,7 +34,7 @@ import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
     ApiClientModule,
   ],
   controllers: [CustomerController],
-  providers: [CustomerService, GoogleSheetsService],
+  providers: [CustomerService, GoogleSheetsService, EmailService],
   exports: [CustomerService], // Add this to export the service
 })
 export class CustomerModule {}

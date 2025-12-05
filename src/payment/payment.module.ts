@@ -6,6 +6,7 @@ import { HttpModule } from '@nestjs/axios';
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
 import { Payment, PaymentSchema } from 'src/schemas/payment.schema';
 import { MongooseModule } from '@nestjs/mongoose';
+import { EmailService } from 'src/common/services/email.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
@@ -13,6 +14,6 @@ import { MongooseModule } from '@nestjs/mongoose';
     HttpModule,
   ],
   controllers: [PaymentController],
-  providers: [PaymentService, GoogleSheetsService],
+  providers: [PaymentService, GoogleSheetsService, EmailService],
 })
 export class PaymentModule {}

@@ -407,6 +407,7 @@ import { AddCustomerDto } from './dto/add-customer.dto';
 import { SoapResponse } from '../common/types/soap-response.type';
 import * as bcrypt from 'bcrypt';
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
+import { EmailService } from 'src/common/services/email.service';
 interface AddCustomerResponse {
   custNo: string;
 }
@@ -458,124 +459,249 @@ export class CustomerService {
   constructor(
     private apiClient: ApiClientService,
     private googleSheetsService: GoogleSheetsService, // Add this
+    private emailService: EmailService,
     @InjectModel('Customer') private customerModel: Model<Customer>,
     @InjectModel('User') private userModel: Model<User>,
   ) {}
 
+  // async addCustomer(
+  //   dto: AddCustomerDto,
+  // ): Promise<SoapResponse<AddCustomerResponse>> {
+  //   const prefContact = (
+  //     dto.customer.preferredContactMethod || 'Email'
+  //   ).toUpperCase();
+  //   dto.customer.agent_id = '713';
+  //   const response = await this.apiClient.soapCall<AddCustomerResponse>(
+  //     '/UtbCustomer',
+  //     {
+  //       customer: {
+  //         ...dto.customer,
+  //         preferredContactMethod: prefContact,
+  //         orderNotificationEmail:
+  //           dto.customer.orderNotificationEmail ?? dto.customer.email,
+  //         internetAccess: 'Y',
+  //         company: `${dto.customer.firstName} ${dto.customer.surname}`,
+  //         sal: dto.customer.sal,
+  //         dob_port: dto.customer.dob_port,
+  //         custAuthorityType: dto.customer.custAuthorityType,
+  //         custAuthorityNo: dto.customer.custAuthorityNo,
+  //         agent_id: dto.customer.agent_id,
+  //       },
+  //     },
+  //     'addCustomer',
+  //   );
+
+  //   if ('error' in response) {
+  //     throw new AppError(
+  //       response.error.message || 'Failed to add customer',
+  //       400,
+  //     );
+  //   }
+
+  //   const custNo = response.return.custNo;
+  //   const now = new Date();
+  //   const createdAt = now.toISOString();
+  //   const updatedAt = now.toISOString();
+
+  //   // EXACT 34-column order (A to AH) — using only real fields from your DTO
+  //   const sheetRow = [
+  //     createdAt, // A: createdAt
+  //     updatedAt, // B: updatedAt
+  //     dto.customer.agent_id || '', // C: agentId
+  //     '', // D: simType → filled on activation
+  //     '', // E: simNumber → ICCID
+  //     'New', // F: New/Existing → default New
+  //     '', // G: newNumber → filled on activation
+  //     '', // H: existingNumber
+  //     '', // I: availableNumbers
+  //     dto.customer.firstName, // J: firstName
+  //     dto.customer.surname, // K: surname
+  //     dto.customer.email, // L: email
+  //     dto.customer.sal || '', // M: sal
+  //     dto.customer.preferredContactMethod || 'Email', // N: preferredContactMethod
+  //     dto.customer.dob_port || dto.customer.dob || '', // O: dob
+  //     'Individual', // P: custType → hardcoded for now
+  //     dto.customer.suburb, // Q: suburb
+  //     dto.customer.state, // R: state
+  //     dto.customer.postcode, // S: postcode
+  //     dto.customer.phone, // T: phoneNumber
+  //     '', // U: selectedPlan → filled on activation
+  //     '', // V: isUpgraded
+  //     '', // W: provider → only on port-in
+  //     '', // X: paymentToken → not in your flow
+  //     'Yes', // Y: isNumberVerified → assumed
+  //     '', // Z: selectedNumber → temporary
+  //     custNo, // AA: custNo
+  //     '', // AB: portingNumber → filled on port-in
+  //     dto.customer.custAuthorityNo || '', // AC: arn
+  //     dto.customer.dob_port || '', // AD: dob_port
+  //     '', // AE: orderNo → filled on activation
+  //     '', // AF: Activated?
+  //     '', // AG: Added to Master Sheet?
+  //     '', // AH: Cx Informed?
+  //   ];
+
+  //   // Save locally
+  //   const savedCustomer = await this.customerModel.create({
+  //     custNo,
+  //     ...dto.customer,
+  //     orderNotificationEmail:
+  //       dto.customer.orderNotificationEmail ?? dto.customer.email,
+  //     agent_id: dto.customer.agent_id,
+  //   });
+
+  //   // Sync address to User collection
+  //   const existingUser = await this.userModel.findOne({
+  //     email: dto.customer.email,
+  //   });
+  //   if (existingUser) {
+  //     await this.userModel.updateOne(
+  //       { _id: existingUser._id },
+  //       {
+  //         $set: {
+  //           street: dto.customer.address,
+  //           suburb: dto.customer.suburb,
+  //           state: dto.customer.state,
+  //           postcode: dto.customer.postcode,
+  //           custNo,
+  //         },
+  //       },
+  //     );
+  //   }
+
+  //   // Fire-and-forget Google Sheets append
+  //   this.googleSheetsService.appendCustomer(sheetRow).catch((err) => {
+  //     console.error('Failed to append to Google Sheets', {
+  //       custNo,
+  //       error: err.message,
+  //     });
+  //   });
+
+  //   return response;
+  // }
   async addCustomer(
     dto: AddCustomerDto,
   ): Promise<SoapResponse<AddCustomerResponse>> {
-    const prefContact = (
-      dto.customer.preferredContactMethod || 'Email'
-    ).toUpperCase();
-    dto.customer.agent_id = '713';
-    const response = await this.apiClient.soapCall<AddCustomerResponse>(
-      '/UtbCustomer',
-      {
-        customer: {
-          ...dto.customer,
-          preferredContactMethod: prefContact,
-          orderNotificationEmail:
-            dto.customer.orderNotificationEmail ?? dto.customer.email,
-          internetAccess: 'Y',
-          company: `${dto.customer.firstName} ${dto.customer.surname}`,
-          sal: dto.customer.sal,
-          dob_port: dto.customer.dob_port,
-          custAuthorityType: dto.customer.custAuthorityType,
-          custAuthorityNo: dto.customer.custAuthorityNo,
-          agent_id: dto.customer.agent_id,
-        },
-      },
-      'addCustomer',
-    );
-
-    if ('error' in response) {
-      throw new AppError(
-        response.error.message || 'Failed to add customer',
-        400,
-      );
-    }
-
-    const custNo = response.return.custNo;
-    const now = new Date();
-    const createdAt = now.toISOString();
-    const updatedAt = now.toISOString();
-
-    // EXACT 34-column order (A to AH) — using only real fields from your DTO
-    const sheetRow = [
-      createdAt, // A: createdAt
-      updatedAt, // B: updatedAt
-      dto.customer.agent_id || '', // C: agentId
-      '', // D: simType → filled on activation
-      '', // E: simNumber → ICCID
-      'New', // F: New/Existing → default New
-      '', // G: newNumber → filled on activation
-      '', // H: existingNumber
-      '', // I: availableNumbers
-      dto.customer.firstName, // J: firstName
-      dto.customer.surname, // K: surname
-      dto.customer.email, // L: email
-      dto.customer.sal || '', // M: sal
-      dto.customer.preferredContactMethod || 'Email', // N: preferredContactMethod
-      dto.customer.dob_port || dto.customer.dob || '', // O: dob
-      'Individual', // P: custType → hardcoded for now
-      dto.customer.suburb, // Q: suburb
-      dto.customer.state, // R: state
-      dto.customer.postcode, // S: postcode
-      dto.customer.phone, // T: phoneNumber
-      '', // U: selectedPlan → filled on activation
-      '', // V: isUpgraded
-      '', // W: provider → only on port-in
-      '', // X: paymentToken → not in your flow
-      'Yes', // Y: isNumberVerified → assumed
-      '', // Z: selectedNumber → temporary
-      custNo, // AA: custNo
-      '', // AB: portingNumber → filled on port-in
-      dto.customer.custAuthorityNo || '', // AC: arn
-      dto.customer.dob_port || '', // AD: dob_port
-      '', // AE: orderNo → filled on activation
-      '', // AF: Activated?
-      '', // AG: Added to Master Sheet?
-      '', // AH: Cx Informed?
-    ];
-
-    // Save locally
-    const savedCustomer = await this.customerModel.create({
-      custNo,
-      ...dto.customer,
-      orderNotificationEmail:
-        dto.customer.orderNotificationEmail ?? dto.customer.email,
-      agent_id: dto.customer.agent_id,
-    });
-
-    // Sync address to User collection
-    const existingUser = await this.userModel.findOne({
-      email: dto.customer.email,
-    });
-    if (existingUser) {
-      await this.userModel.updateOne(
-        { _id: existingUser._id },
+    try {
+      const prefContact = (
+        dto.customer.preferredContactMethod || 'Email'
+      ).toUpperCase();
+      dto.customer.agent_id = '713';
+      const response = await this.apiClient.soapCall<AddCustomerResponse>(
+        '/UtbCustomer',
         {
-          $set: {
-            street: dto.customer.address,
-            suburb: dto.customer.suburb,
-            state: dto.customer.state,
-            postcode: dto.customer.postcode,
-            custNo,
+          customer: {
+            ...dto.customer,
+            preferredContactMethod: prefContact,
+            orderNotificationEmail:
+              dto.customer.orderNotificationEmail ?? dto.customer.email,
+            internetAccess: 'Y',
+            company: `${dto.customer.firstName} ${dto.customer.surname}`,
+            sal: dto.customer.sal,
+            dob_port: dto.customer.dob_port,
+            custAuthorityType: dto.customer.custAuthorityType,
+            custAuthorityNo: dto.customer.custAuthorityNo,
+            agent_id: dto.customer.agent_id,
           },
         },
+        'addCustomer',
       );
-    }
 
-    // Fire-and-forget Google Sheets append
-    this.googleSheetsService.appendCustomer(sheetRow).catch((err) => {
-      console.error('Failed to append to Google Sheets', {
+      if ('error' in response) {
+        throw new AppError(
+          response.error.message || 'Failed to add customer',
+          400,
+        );
+      }
+
+      const custNo = response.return.custNo;
+      const now = new Date();
+      const createdAt = now.toISOString();
+      const updatedAt = now.toISOString();
+
+      // EXACT 34-column order (A to AH) — using only real fields from your DTO
+      const sheetRow = [
+        createdAt, // A: createdAt
+        updatedAt, // B: updatedAt
+        dto.customer.agent_id || '', // C: agentId
+        '', // D: simType → filled on activation
+        '', // E: simNumber → ICCID
+        'New', // F: New/Existing → default New
+        '', // G: newNumber → filled on activation
+        '', // H: existingNumber
+        '', // I: availableNumbers
+        dto.customer.firstName, // J: firstName
+        dto.customer.surname, // K: surname
+        dto.customer.email, // L: email
+        dto.customer.sal || '', // M: sal
+        dto.customer.preferredContactMethod || 'Email', // N: preferredContactMethod
+        dto.customer.dob_port || dto.customer.dob || '', // O: dob
+        'Individual', // P: custType → hardcoded for now
+        dto.customer.suburb, // Q: suburb
+        dto.customer.state, // R: state
+        dto.customer.postcode, // S: postcode
+        dto.customer.phone, // T: phoneNumber
+        '', // U: selectedPlan → filled on activation
+        '', // V: isUpgraded
+        '', // W: provider → only on port-in
+        '', // X: paymentToken → not in your flow
+        'Yes', // Y: isNumberVerified → assumed
+        '', // Z: selectedNumber → temporary
+        custNo, // AA: custNo
+        '', // AB: portingNumber → filled on port-in
+        dto.customer.custAuthorityNo || '', // AC: arn
+        dto.customer.dob_port || '', // AD: dob_port
+        '', // AE: orderNo → filled on activation
+        '', // AF: Activated?
+        '', // AG: Added to Master Sheet?
+        '', // AH: Cx Informed?
+      ];
+
+      // Save locally
+      const savedCustomer = await this.customerModel.create({
         custNo,
-        error: err.message,
+        ...dto.customer,
+        orderNotificationEmail:
+          dto.customer.orderNotificationEmail ?? dto.customer.email,
+        agent_id: dto.customer.agent_id,
       });
-    });
 
-    return response;
+      // Sync address to User collection
+      const existingUser = await this.userModel.findOne({
+        email: dto.customer.email,
+      });
+      if (existingUser) {
+        await this.userModel.updateOne(
+          { _id: existingUser._id },
+          {
+            $set: {
+              street: dto.customer.address,
+              suburb: dto.customer.suburb,
+              state: dto.customer.state,
+              postcode: dto.customer.postcode,
+              custNo,
+            },
+          },
+        );
+      }
+
+      // Fire-and-forget Google Sheets append
+      this.googleSheetsService.appendCustomer(sheetRow).catch((err) => {
+        console.error('Failed to append to Google Sheets', {
+          custNo,
+          error: err.message,
+        });
+      });
+
+      return response;
+    } catch (error) {
+      await this.emailService.sendFailureEmail(
+        'addCustomer',
+        error.message || 'Unknown error',
+        { dto },
+      );
+      throw error;
+    }
   }
   async getServices(custNo: string): Promise<SoapResponse<ServicesResponse>> {
     if (!custNo) throw new AppError('Customer number required', 400);

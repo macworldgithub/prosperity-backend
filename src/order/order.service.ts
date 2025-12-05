@@ -1333,7 +1333,7 @@ import { ActivatePortNumberDto } from './dto/activate-port-number.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { SoapResponse } from '../common/types/soap-response.type';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
-
+import { EmailService } from 'src/common/services/email.service';
 interface OrderCreateResponse {
   orderId: string;
   errorMessage?: string;
@@ -1350,6 +1350,7 @@ export class OrderService {
     private apiClient: ApiClientService,
     private configService: ConfigService,
     private googleSheetsService: GoogleSheetsService,
+    private emailService: EmailService,
     @InjectModel(Order.name) private orderModel: Model<Order>,
   ) {}
 
@@ -1416,196 +1417,405 @@ export class OrderService {
       });
   }
 
+  // async activateNumber(
+  //   dto: ActivateNumberDto,
+  // ): Promise<SoapResponse<OrderCreateResponse>> {
+  //   this.validateCustomerData(dto, dto.number);
+
+  //   const isEsim = !dto.simNo;
+  //   const simType = isEsim ? 'eSIM' : 'Physical SIM';
+  //   dto.agentId = '713';
+  //   const requestBody = {
+  //     createRequest: {
+  //       custNo: dto.cust.custNo,
+  //       orderType: 'SRVC_ORD',
+  //       orderAction: 'ADD_WME_NEW',
+  //       orderItems: {
+  //         wmeNewReqItem: {
+  //           lineType: 'R',
+  //           lineName: 'SimplyBig Unlimited',
+  //           planNo: dto.planNo,
+  //           agentId: dto.agentId,
+  //           orderItemAddress: {
+  //             locality: dto.cust.suburb,
+  //             postcode: dto.cust.postcode,
+  //             streetName: dto.cust.address.split(',')[0]?.trim() || '',
+  //             additionalAddress: dto.cust.address.substring(0, 10),
+  //           },
+  //           msn: dto.number,
+  //           ...(dto.simNo
+  //             ? { simNo: dto.simNo }
+  //             : { isEsim: true, isQRcode: true }),
+  //           cycleNo: '28',
+  //           spendCode: '80610',
+  //           notificationEmail: dto.cust.email,
+  //         },
+  //       },
+  //     },
+  //   };
+
+  //   const result = await this.apiClient.soapCall<OrderCreateResponse>(
+  //     '/UtbOrder',
+  //     requestBody,
+  //     'orderCreate',
+  //   );
+
+  //   if ('error' in result) {
+  //     throw new AppError(
+  //       result.error.message || 'Failed to activate number',
+  //       400,
+  //     );
+  //   }
+  //   if ('return' in result && result.return.errorMessage) {
+  //     throw new AppError(result.return.errorMessage, 400);
+  //   }
+
+  //   const orderId = result.return.orderId;
+
+  //   await this.orderModel.create({
+  //     orderId,
+  //     custNo: dto.cust.custNo,
+  //     msn: dto.number,
+  //     planNo: dto.planNo,
+  //     agentId: dto.agentId || 'UNKNOWN',
+  //     status: 'PENDING',
+  //     orderType: 'NEW_ACTIVATION',
+  //     orderAction: 'ADD_WME_NEW',
+  //     simNo: dto.simNo,
+  //     isEsim,
+  //     isQRcode: isEsim,
+  //     address: dto.cust.address,
+  //     suburb: dto.cust.suburb,
+  //     postcode: dto.cust.postcode,
+  //     email: dto.cust.email,
+  //     rawRequest: requestBody,
+  //     rawResponse: result,
+  //   });
+
+  //   await this.syncOrderToGoogleSheets(
+  //     dto.cust.custNo,
+  //     orderId,
+  //     dto.number,
+  //     dto.planNo,
+  //     'NEW_ACTIVATION',
+  //     simType,
+  //     { simNumber: dto.simNo },
+  //   );
+
+  //   return result;
+  // }
+
+  // async activatePortNumber(
+  //   dto: ActivatePortNumberDto,
+  // ): Promise<SoapResponse<OrderCreateResponse>> {
+  //   this.validateCustomerData(dto, dto.number);
+
+  //   if (!dto.numType || !['prepaid', 'postpaid'].includes(dto.numType))
+  //     throw new AppError('Invalid number type', 400);
+  //   if (dto.numType === 'prepaid' && !dto.cust.dob)
+  //     throw new AppError('DOB required for prepaid port', 400);
+  //   if (dto.numType === 'postpaid' && !dto.cust.arn)
+  //     throw new AppError('ARN required for postpaid port', 400);
+
+  //   const msn = dto.number.startsWith('0') ? dto.number : '0' + dto.number;
+  //   const isEsim = !dto.simNo;
+  //   const simType = isEsim ? 'eSIM' : 'Physical SIM';
+  //   dto.agentId = '713';
+
+  //   const requestBody = {
+  //     createRequest: {
+  //       custNo: dto.cust.custNo,
+  //       orderType: 'SRVC_ORD',
+  //       orderAction: 'ADD_WME_PORT',
+  //       orderItems: {
+  //         wmePortInReqItem: {
+  //           lineType: 'R',
+  //           lineName: 'SimplyBig Unlimited',
+
+  //           planNo: dto.planNo,
+  //           agentId: dto.agentId,
+
+  //           orderItemAddress: {
+  //             locality: dto.cust.suburb,
+  //             postcode: dto.cust.postcode,
+  //             streetName: dto.cust.address.split(',')[0]?.trim() || '',
+  //             additionalAddress: dto.cust.address.substring(0, 10),
+  //           },
+  //           msn,
+  //           ...(dto.simNo
+  //             ? { simNo: dto.simNo }
+  //             : { isEsim: true, isQRcode: true }),
+  //           cycleNo: '28',
+  //           spendCode: '80610',
+  //           notificationEmail: dto.cust.email,
+  //           ...(dto.numType === 'prepaid'
+  //             ? { dob: dto.cust.dob }
+  //             : { arn: dto.cust.arn }),
+  //         },
+  //       },
+  //     },
+  //   };
+
+  //   const result = await this.apiClient.soapCall<OrderCreateResponse>(
+  //     '/UtbOrder',
+  //     requestBody,
+  //     'orderCreate',
+  //   );
+
+  //   if ('error' in result) {
+  //     throw new AppError(result.error.message || 'Failed to port number', 400);
+  //   }
+  //   if ('return' in result && result.return.errorMessage) {
+  //     throw new AppError(result.return.errorMessage, 400);
+  //   }
+
+  //   const orderId = result.return.orderId;
+
+  //   await this.orderModel.create({
+  //     orderId,
+  //     custNo: dto.cust.custNo,
+  //     msn,
+  //     planNo: dto.planNo,
+  //     agentId: dto.agentId || 'UNKNOWN',
+  //     status: 'PENDING',
+  //     orderType: 'PORT_IN',
+  //     orderAction: 'ADD_WME_PORT',
+  //     simNo: dto.simNo,
+  //     isEsim,
+  //     isQRcode: isEsim,
+  //     numType: dto.numType,
+  //     dob: dto.numType === 'prepaid' ? dto.cust.dob : undefined,
+  //     arn: dto.numType === 'postpaid' ? dto.cust.arn : undefined,
+  //     address: dto.cust.address,
+  //     suburb: dto.cust.suburb,
+  //     postcode: dto.cust.postcode,
+  //     email: dto.cust.email,
+  //     rawRequest: requestBody,
+  //     rawResponse: result,
+  //   });
+
+  //   await this.syncOrderToGoogleSheets(
+  //     dto.cust.custNo,
+  //     orderId,
+  //     msn,
+  //     dto.planNo,
+  //     'PORT_IN',
+  //     simType,
+  //     { simNumber: dto.simNo },
+  //   );
+
+  //   return result;
+  // }
   async activateNumber(
     dto: ActivateNumberDto,
   ): Promise<SoapResponse<OrderCreateResponse>> {
-    this.validateCustomerData(dto, dto.number);
+    try {
+      this.validateCustomerData(dto, dto.number);
 
-    const isEsim = !dto.simNo;
-    const simType = isEsim ? 'eSIM' : 'Physical SIM';
-    dto.agentId = '713';
-    const requestBody = {
-      createRequest: {
-        custNo: dto.cust.custNo,
-        orderType: 'SRVC_ORD',
-        orderAction: 'ADD_WME_NEW',
-        orderItems: {
-          wmeNewReqItem: {
-            lineType: 'R',
-            lineName: 'SimplyBig Unlimited',
-            planNo: dto.planNo,
-            agentId: dto.agentId,
-            orderItemAddress: {
-              locality: dto.cust.suburb,
-              postcode: dto.cust.postcode,
-              streetName: dto.cust.address.split(',')[0]?.trim() || '',
-              additionalAddress: dto.cust.address.substring(0, 10),
+      const isEsim = !dto.simNo;
+      const simType = isEsim ? 'eSIM' : 'Physical SIM';
+      dto.agentId = '713';
+      const requestBody = {
+        createRequest: {
+          custNo: dto.cust.custNo,
+          orderType: 'SRVC_ORD',
+          orderAction: 'ADD_WME_NEW',
+          orderItems: {
+            wmeNewReqItem: {
+              lineType: 'R',
+              lineName: 'SimplyBig Unlimited',
+              planNo: dto.planNo,
+              agentId: dto.agentId,
+              orderItemAddress: {
+                locality: dto.cust.suburb,
+                postcode: dto.cust.postcode,
+                streetName: dto.cust.address.split(',')[0]?.trim() || '',
+                additionalAddress: dto.cust.address.substring(0, 10),
+              },
+              msn: dto.number,
+              ...(dto.simNo
+                ? { simNo: dto.simNo }
+                : { isEsim: true, isQRcode: true }),
+              cycleNo: '28',
+              spendCode: '80610',
+              notificationEmail: dto.cust.email,
             },
-            msn: dto.number,
-            ...(dto.simNo
-              ? { simNo: dto.simNo }
-              : { isEsim: true, isQRcode: true }),
-            cycleNo: '28',
-            spendCode: '80610',
-            notificationEmail: dto.cust.email,
           },
         },
-      },
-    };
+      };
 
-    const result = await this.apiClient.soapCall<OrderCreateResponse>(
-      '/UtbOrder',
-      requestBody,
-      'orderCreate',
-    );
-
-    if ('error' in result) {
-      throw new AppError(
-        result.error.message || 'Failed to activate number',
-        400,
+      const result = await this.apiClient.soapCall<OrderCreateResponse>(
+        '/UtbOrder',
+        requestBody,
+        'orderCreate',
       );
+
+      if ('error' in result) {
+        throw new AppError(
+          result.error.message || 'Failed to activate number',
+          400,
+        );
+      }
+      if ('return' in result && result.return.errorMessage) {
+        throw new AppError(result.return.errorMessage, 400);
+      }
+
+      const orderId = result.return.orderId;
+
+      await this.orderModel.create({
+        orderId,
+        custNo: dto.cust.custNo,
+        msn: dto.number,
+        planNo: dto.planNo,
+        agentId: dto.agentId || 'UNKNOWN',
+        status: 'PENDING',
+        orderType: 'NEW_ACTIVATION',
+        orderAction: 'ADD_WME_NEW',
+        simNo: dto.simNo,
+        isEsim,
+        isQRcode: isEsim,
+        address: dto.cust.address,
+        suburb: dto.cust.suburb,
+        postcode: dto.cust.postcode,
+        email: dto.cust.email,
+        rawRequest: requestBody,
+        rawResponse: result,
+      });
+
+      await this.syncOrderToGoogleSheets(
+        dto.cust.custNo,
+        orderId,
+        dto.number,
+        dto.planNo,
+        'NEW_ACTIVATION',
+        simType,
+        { simNumber: dto.simNo },
+      );
+
+      return result;
+    } catch (error) {
+      await this.emailService.sendFailureEmail(
+        'activateNumber',
+        error.message || 'Unknown error',
+        { dto },
+      );
+      throw error;
     }
-    if ('return' in result && result.return.errorMessage) {
-      throw new AppError(result.return.errorMessage, 400);
-    }
-
-    const orderId = result.return.orderId;
-
-    await this.orderModel.create({
-      orderId,
-      custNo: dto.cust.custNo,
-      msn: dto.number,
-      planNo: dto.planNo,
-      agentId: dto.agentId || 'UNKNOWN',
-      status: 'PENDING',
-      orderType: 'NEW_ACTIVATION',
-      orderAction: 'ADD_WME_NEW',
-      simNo: dto.simNo,
-      isEsim,
-      isQRcode: isEsim,
-      address: dto.cust.address,
-      suburb: dto.cust.suburb,
-      postcode: dto.cust.postcode,
-      email: dto.cust.email,
-      rawRequest: requestBody,
-      rawResponse: result,
-    });
-
-    await this.syncOrderToGoogleSheets(
-      dto.cust.custNo,
-      orderId,
-      dto.number,
-      dto.planNo,
-      'NEW_ACTIVATION',
-      simType,
-      { simNumber: dto.simNo },
-    );
-
-    return result;
   }
 
   async activatePortNumber(
     dto: ActivatePortNumberDto,
   ): Promise<SoapResponse<OrderCreateResponse>> {
-    this.validateCustomerData(dto, dto.number);
+    try {
+      this.validateCustomerData(dto, dto.number);
 
-    if (!dto.numType || !['prepaid', 'postpaid'].includes(dto.numType))
-      throw new AppError('Invalid number type', 400);
-    if (dto.numType === 'prepaid' && !dto.cust.dob)
-      throw new AppError('DOB required for prepaid port', 400);
-    if (dto.numType === 'postpaid' && !dto.cust.arn)
-      throw new AppError('ARN required for postpaid port', 400);
+      if (!dto.numType || !['prepaid', 'postpaid'].includes(dto.numType))
+        throw new AppError('Invalid number type', 400);
+      if (dto.numType === 'prepaid' && !dto.cust.dob)
+        throw new AppError('DOB required for prepaid port', 400);
+      if (dto.numType === 'postpaid' && !dto.cust.arn)
+        throw new AppError('ARN required for postpaid port', 400);
 
-    const msn = dto.number.startsWith('0') ? dto.number : '0' + dto.number;
-    const isEsim = !dto.simNo;
-    const simType = isEsim ? 'eSIM' : 'Physical SIM';
-        dto.agentId = '713';
+      const msn = dto.number.startsWith('0') ? dto.number : '0' + dto.number;
+      const isEsim = !dto.simNo;
+      const simType = isEsim ? 'eSIM' : 'Physical SIM';
+      dto.agentId = '713';
 
-    const requestBody = {
-      createRequest: {
-        custNo: dto.cust.custNo,
-        orderType: 'SRVC_ORD',
-        orderAction: 'ADD_WME_PORT',
-        orderItems: {
-          wmePortInReqItem: {
-            lineType: 'R',
-            lineName: 'SimplyBig Unlimited',
+      const requestBody = {
+        createRequest: {
+          custNo: dto.cust.custNo,
+          orderType: 'SRVC_ORD',
+          orderAction: 'ADD_WME_PORT',
+          orderItems: {
+            wmePortInReqItem: {
+              lineType: 'R',
+              lineName: 'SimplyBig Unlimited',
 
-            planNo: dto.planNo,
-            agentId: dto.agentId,
+              planNo: dto.planNo,
+              agentId: dto.agentId,
 
-            orderItemAddress: {
-              locality: dto.cust.suburb ,
-              postcode: dto.cust.postcode ,
-              streetName: dto.cust.address.split(',')[0]?.trim() || '',
-              additionalAddress: dto.cust.address.substring(0, 10),
+              orderItemAddress: {
+                locality: dto.cust.suburb,
+                postcode: dto.cust.postcode,
+                streetName: dto.cust.address.split(',')[0]?.trim() || '',
+                additionalAddress: dto.cust.address.substring(0, 10),
+              },
+              msn,
+              ...(dto.simNo
+                ? { simNo: dto.simNo }
+                : { isEsim: true, isQRcode: true }),
+              cycleNo: '28',
+              spendCode: '80610',
+              notificationEmail: dto.cust.email,
+              ...(dto.numType === 'prepaid'
+                ? { dob: dto.cust.dob }
+                : { arn: dto.cust.arn }),
             },
-            msn,
-            ...(dto.simNo
-              ? { simNo: dto.simNo }
-              : { isEsim: true, isQRcode: true }),
-            cycleNo: '28',
-            spendCode: '80610',
-            notificationEmail: dto.cust.email,
-            ...(dto.numType === 'prepaid'
-              ? { dob: dto.cust.dob }
-              : { arn: dto.cust.arn }),
           },
         },
-      },
-    };
+      };
 
-    const result = await this.apiClient.soapCall<OrderCreateResponse>(
-      '/UtbOrder',
-      requestBody,
-      'orderCreate',
-    );
+      const result = await this.apiClient.soapCall<OrderCreateResponse>(
+        '/UtbOrder',
+        requestBody,
+        'orderCreate',
+      );
 
-    if ('error' in result) {
-      throw new AppError(result.error.message || 'Failed to port number', 400);
+      if ('error' in result) {
+        throw new AppError(
+          result.error.message || 'Failed to port number',
+          400,
+        );
+      }
+      if ('return' in result && result.return.errorMessage) {
+        throw new AppError(result.return.errorMessage, 400);
+      }
+
+      const orderId = result.return.orderId;
+
+      await this.orderModel.create({
+        orderId,
+        custNo: dto.cust.custNo,
+        msn,
+        planNo: dto.planNo,
+        agentId: dto.agentId || 'UNKNOWN',
+        status: 'PENDING',
+        orderType: 'PORT_IN',
+        orderAction: 'ADD_WME_PORT',
+        simNo: dto.simNo,
+        isEsim,
+        isQRcode: isEsim,
+        numType: dto.numType,
+        dob: dto.numType === 'prepaid' ? dto.cust.dob : undefined,
+        arn: dto.numType === 'postpaid' ? dto.cust.arn : undefined,
+        address: dto.cust.address,
+        suburb: dto.cust.suburb,
+        postcode: dto.cust.postcode,
+        email: dto.cust.email,
+        rawRequest: requestBody,
+        rawResponse: result,
+      });
+
+      await this.syncOrderToGoogleSheets(
+        dto.cust.custNo,
+        orderId,
+        msn,
+        dto.planNo,
+        'PORT_IN',
+        simType,
+        { simNumber: dto.simNo },
+      );
+
+      return result;
+    } catch (error) {
+      await this.emailService.sendFailureEmail(
+        'activatePortNumber',
+        error.message || 'Unknown error',
+        { dto },
+      );
+      throw error;
     }
-    if ('return' in result && result.return.errorMessage) {
-      throw new AppError(result.return.errorMessage, 400);
-    }
-
-    const orderId = result.return.orderId;
-
-    await this.orderModel.create({
-      orderId,
-      custNo: dto.cust.custNo,
-      msn,
-      planNo: dto.planNo,
-      agentId: dto.agentId || 'UNKNOWN',
-      status: 'PENDING',
-      orderType: 'PORT_IN',
-      orderAction: 'ADD_WME_PORT',
-      simNo: dto.simNo,
-      isEsim,
-      isQRcode: isEsim,
-      numType: dto.numType,
-      dob: dto.numType === 'prepaid' ? dto.cust.dob : undefined,
-      arn: dto.numType === 'postpaid' ? dto.cust.arn : undefined,
-      address: dto.cust.address,
-      suburb: dto.cust.suburb,
-      postcode: dto.cust.postcode,
-      email: dto.cust.email,
-      rawRequest: requestBody,
-      rawResponse: result,
-    });
-
-    await this.syncOrderToGoogleSheets(
-      dto.cust.custNo,
-      orderId,
-      msn,
-      dto.planNo,
-      'PORT_IN',
-      simType,
-      { simNumber: dto.simNo },
-    );
-
-    return result;
   }
-
   async updatePlan(dto: UpdatePlanDto, custNo: string): Promise<SoapResponse> {
     if (!custNo || !dto.planNo || !dto.lineSeqNo)
       throw new AppError('custNo, planNo, lineSeqNo are required', 400);
