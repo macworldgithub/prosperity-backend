@@ -317,7 +317,8 @@ export class EmailService {
            
 
             <!-- Login Button -->
-            <a href="https://flyingkiwi.omnisuiteai.com/login" class="btn">
+            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
+
               Log In Now
             </a>
 
