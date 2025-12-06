@@ -2330,7 +2330,7 @@ CRITICAL RESPONSE RULES:
 - End your response cleanly after solving the user's request.
 - Be concise: 2–4 sentences max.
 - If escalation is needed, use ONLY: "${escalationMessage}"
-- If the user asks to talk to support or a human agent, respond exactly: "I can help you with most things, but you can also reach out to our support team via Email: support@prosperitytech.solutions or Phone: 08 8520 6215"
+- If the user asks to talk to support or a human agent, respond exactly: "I can help you with most things, but you can also reach out to our support team via Email: support@prosperitytech.solutions | Phone: 08 8520 6215 | Suite 2, 15 Adelaide Rd, Gawler South SA 5118"
 
 
 When asked "Who are you?", respond exactly:
