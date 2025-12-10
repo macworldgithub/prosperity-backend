@@ -1341,6 +1341,7 @@ interface OrderCreateResponse {
 
 interface OrderQueryResponse {
   status?: string;
+  internalStatus?: string;
   errorMessage?: string;
 }
 
@@ -1878,43 +1879,101 @@ export class OrderService {
     return result;
   }
 
-  async queryOrder(orderId: string): Promise<SoapResponse<OrderQueryResponse>> {
-    if (!orderId) throw new AppError('Order ID required', 400);
+  // async queryOrder(orderId: string): Promise<SoapResponse<OrderQueryResponse>> {
+  //   if (!orderId) throw new AppError('Order ID required', 400);
 
-    const result = await this.apiClient.soapCall<OrderQueryResponse>(
-      '/UtbOrder',
-      { request: { orderId } },
-      'orderQuery',
-    );
+  //   const result = await this.apiClient.soapCall<OrderQueryResponse>(
+  //     '/UtbOrder',
+  //     { request: { orderId } },
+  //     'orderQuery',
+  //   );
 
-    if (!('error' in result) && 'return' in result && result.return?.status) {
-      const status = result.return.status.toUpperCase();
+  //   if (!('error' in result) && 'return' in result && result.return?.status) {
+  //     const status = result.return.status.toUpperCase();
 
-      await this.orderModel.updateOne(
-        { orderId },
-        {
-          $set: {
-            status,
-            errorMessage: result.return.errorMessage || null,
-            rawResponse: result,
-          },
-        },
-      );
+  //     await this.orderModel.updateOne(
+  //       { orderId },
+  //       {
+  //         $set: {
+  //           status,
+  //           errorMessage: result.return.errorMessage || null,
+  //           rawResponse: result,
+  //         },
+  //       },
+  //     );
 
-      if (['ACTIVE', 'COMPLETED', 'SUCCESS'].includes(status)) {
-        const order = await this.orderModel.findOne({ orderId });
-        if (order) {
-          this.googleSheetsService
-            .updateCustomerRowByCustNo(order.custNo, {
-              status: 'COMPLETED',
-            })
-            .catch(console.error);
-        }
-      }
-    }
+  //     if (['ACTIVE', 'COMPLETED', 'SUCCESS'].includes(status)) {
+  //       const order = await this.orderModel.findOne({ orderId });
+  //       if (order) {
+  //         this.googleSheetsService
+  //           .updateCustomerRowByCustNo(order.custNo, {
+  //             status: 'COMPLETED',
+  //           })
+  //           .catch(console.error);
+  //       }
+  //     }
+  //   }
 
+  //   return result;
+  // }
+ async queryOrder(orderId: string): Promise<SoapResponse<OrderQueryResponse>> {
+  if (!orderId) throw new AppError('Order ID required', 400);
+
+  const result = await this.apiClient.soapCall<OrderQueryResponse>(
+    '/UtbOrder',
+    { request: { orderId } },
+    'orderQuery'
+  );
+
+  // If it's an error response, skip logic & return immediately
+  if ("error" in result) {
+    console.warn("SOAP returned error:", result.error);
     return result;
   }
+
+  // ---- At this point, TypeScript knows "result" has "return" ----
+  const ret = result.return;
+
+  // internalStatus is inside orderQueryResponse, not root
+  const payload =
+    (ret as any).orderQueryResponse ??
+    ret;
+
+  const internalStatus =
+    payload?.internalStatus ??
+    payload?.status ??
+    null;
+
+  if (internalStatus) {
+    const status = String(internalStatus).toUpperCase();
+
+    // Handle numeric vs string orderId in DB
+    const numericOrderId = Number(orderId);
+    const filter = isNaN(numericOrderId)
+      ? { orderId }
+      : { orderId: numericOrderId };
+
+    await this.orderModel.updateOne(
+      filter,
+      {
+        $set: {
+          status,
+          errorMessage: payload?.errorMessage || null,
+          rawResponse: result,
+        },
+      }
+    );
+
+    const order = await this.orderModel.findOne(filter);
+    if (order) {
+      this.googleSheetsService
+        .updateCustomerRowByCustNo(order.custNo, { status })
+        .catch(console.error);
+    }
+  }
+
+  return result;
+}
 
   async getPlans(): Promise<SoapResponse<any>> {
     return this.apiClient.soapCall(
