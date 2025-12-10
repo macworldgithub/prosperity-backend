@@ -24,12 +24,13 @@ import { CustomerService } from './customer.service';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
 import { EmailService } from 'src/common/services/email.service';
-
+import { Order,OrderSchema } from 'src/schemas/order.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Customer.name, schema: CustomerSchema },
       { name: User.name, schema: UserSchema },
+      { name: Order.name, schema: OrderSchema },
     ]),
     ApiClientModule,
   ],

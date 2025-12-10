@@ -1009,4 +1009,46 @@ export class CustomerController {
       'Customer account deleted successfully',
     );
   }
+  // customer.controller.ts (add this method)
+
+@Get(':custNo/orders')
+@ApiOperation({
+  summary: 'Get all orders for a customer',
+  description: 'Retrieves all activation/port-in/plan change orders linked to a customer.',
+})
+@ApiParam({
+  name: 'custNo',
+  type: 'string',
+  description: 'Customer number (e.g., CUST123456)',
+  example: 'CUST123456',
+})
+@ApiResponse({
+  status: 200,
+  description: 'List of orders retrieved successfully',
+  schema: {
+    example: formatResponse(
+      [
+        {
+          orderId: 'ORD-2025-0001',
+          custNo: 'CUST123456',
+          msn: '61400123456',
+          planNo: 'PLAN123',
+          orderType: 'NEW_ACTIVATION',
+          orderAction: 'ADD_WME_NEW',
+          status: 'COMPLETED',
+          createdAt: '2025-04-15T10:30:00.000Z',
+          isEsim: true,
+          simNo: '8944100030123456789',
+        },
+        // ... more orders
+      ],
+      'Orders retrieved successfully',
+    ),
+  },
+})
+@ApiResponse({ status: 404, description: 'Customer not found or no orders' })
+async getCustomerOrders(@Param('custNo') custNo: string) {
+  const orders = await this.customerService.getOrdersByCustomer(custNo);
+  return formatResponse(orders, 'Orders retrieved successfully');
+}
 }

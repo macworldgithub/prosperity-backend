@@ -406,6 +406,7 @@ import { AppError } from '../common/errors/app-error';
 import { AddCustomerDto } from './dto/add-customer.dto';
 import { SoapResponse } from '../common/types/soap-response.type';
 import * as bcrypt from 'bcrypt';
+import { Order } from 'src/schemas/order.schema';
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
 import { EmailService } from 'src/common/services/email.service';
 interface AddCustomerResponse {
@@ -462,6 +463,7 @@ export class CustomerService {
     private emailService: EmailService,
     @InjectModel('Customer') private customerModel: Model<Customer>,
     @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('Order') private orderModel: Model<Order>, // Add this line
   ) {}
 
   // async addCustomer(
@@ -866,4 +868,17 @@ export class CustomerService {
 
     return response;
   }
+  async getOrdersByCustomer(custNo: string): Promise<Order[]> {
+  if (!custNo) {
+    throw new AppError('Customer number is required', 400);
+  }
+
+  const orders = await this.orderModel
+    .find({ custNo: custNo.trim() })
+    .sort({ createdAt: -1 }) // newest first
+    .lean() // return plain JS objects (better performance)
+    .exec();
+
+  return orders;
+}
 }
