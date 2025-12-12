@@ -218,7 +218,8 @@ export class EmailService {
       : '';
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      to: 'brian@bele.ai, lee@bele.ai',
+      // to: 'brian@bele.ai, lee@bele.ai',
+      to: `karimjawwad09@gmail.com`,
       subject: `Failure in ${functionName}`,
       html: `
       <!DOCTYPE html>
@@ -230,10 +231,10 @@ export class EmailService {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); }
-          .header { 
-            background: linear-gradient(135deg, #145374, #0f3f5a); 
-            padding: 60px 20px; 
-            text-align: center; 
+          .header {
+            background: linear-gradient(135deg, #145374, #0f3f5a);
+            padding: 60px 20px;
+            text-align: center;
           }
           .brand-title {
             color: white;
@@ -243,10 +244,10 @@ export class EmailService {
             letter-spacing: 3px;
             text-shadow: 0 5px 15px rgba(0,0,0,0.4);
           }
-          .content { 
-            padding: 60px 40px; 
-            text-align: center; 
-            color: #333; 
+          .content {
+            padding: 60px 40px;
+            text-align: center;
+            color: #333;
           }
           .error-box {
             background: #ffebee;
@@ -274,7 +275,6 @@ export class EmailService {
           <div class="header">
             <h1 class="brand-title">Prosperity Tech</h1>
           </div>
-
           <div class="content">
             <h2 style="color: #d32f2f; margin-bottom: 15px; font-size: 28px;">
               Failure in ${functionName}
@@ -292,12 +292,10 @@ export class EmailService {
                 },
               )}.
             </p>
-
             <div class="error-box">
               <strong>Error Message:</strong><br>
               ${errorMessage}
             </div>
-
             ${
               details
                 ? `
@@ -308,7 +306,175 @@ export class EmailService {
             `
                 : ''
             }
-
+            <p style="margin-top: 50px; color: #888; font-size: 16px;">
+              — The Prosperity Tech Team
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+      `,
+    });
+  }
+  async sendOrderCompletionEmail(customerEmail: string, orderId: string) {
+    await this.transporter.sendMail({
+      from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
+      // to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
+      to: `karimjawwad09@gmail.com`,
+      subject: 'Your Order Has Been Completed',
+      html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Order Completed - Prosperity Tech</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #145374, #0f3f5a); padding: 60px 20px; text-align: center; }
+          .brand-title { color: white; font-size: 52px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+          .content { padding: 60px 40px; text-align: center; }
+          .success-box {
+            background: linear-gradient(135deg, #e8f4f8, #d0eaef);
+            border: 3px solid #145374;
+            border-radius: 16px;
+            padding: 35px;
+            margin: 40px 0;
+            font-size: 18px;
+          }
+          .btn {
+            background: #145374;
+            color: white;
+            padding: 20px 60px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 19px;
+            display: inline-block;
+            box-shadow: 0 12px 30px rgba(20,83,116,0.45);
+            transition: all 0.3s;
+          }
+          .btn:hover {
+            background: #0f3f5a;
+            transform: translateY(-4px);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 class="brand-title">Prosperity Tech</h1>
+          </div>
+          <div class="content">
+            <h2 style="color: #145374; font-size: 28px;">Order Completed Successfully</h2>
+          
+            <div class="success-box">
+              <p style="margin:0; line-height: 1.7;">
+                Your order (ID: ${orderId}) was successfully completed on<br>
+                <strong style="font-size: 22px; color: #145374;">
+                  ${new Date().toLocaleString('en-NZ', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </strong>
+              </p>
+              <p style="margin-top: 20px;">Your services are now available.</p>
+            </div>
+            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
+              Log In to View Details
+            </a>
+            <p style="margin-top: 50px; color: #888; font-size: 16px;">
+              — The Prosperity Tech Team
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+      `,
+    });
+  }
+  async sendOrderFailureEmail(
+    customerEmail: string,
+    orderId: string,
+    reason: string,
+  ) {
+    await this.transporter.sendMail({
+      from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
+      // to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
+      to: `karimjawwad09@gmail.com`,
+      subject: `Order ${orderId} Failed or Rejected`,
+      html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Order Failed - Prosperity Tech</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #d32f2f, #b71c1c); padding: 60px 20px; text-align: center; }
+          .brand-title { color: white; font-size: 52px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+          .content { padding: 60px 40px; text-align: center; color: #333; }
+          .error-box {
+            background: #ffebee;
+            border: 3px solid #d32f2f;
+            border-radius: 16px;
+            padding: 35px;
+            margin: 40px 0;
+            font-size: 18px;
+            color: #c62828;
+          }
+          .btn {
+            background: #d32f2f;
+            color: white;
+            padding: 20px 60px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 19px;
+            display: inline-block;
+            box-shadow: 0 12px 30px rgba(211,47,47,0.45);
+            transition: all 0.3s;
+          }
+          .btn:hover {
+            background: #b71c1c;
+            transform: translateY(-4px);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 class="brand-title">Prosperity Tech</h1>
+          </div>
+          <div class="content">
+            <h2 style="color: #d32f2f; font-size: 28px;">Order Failed or Rejected</h2>
+          
+            <div class="error-box">
+              <p style="margin:0; line-height: 1.7;">
+                Your order (ID: ${orderId}) has failed or been rejected on<br>
+                <strong style="font-size: 22px; color: #d32f2f;">
+                  ${new Date().toLocaleString('en-NZ', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </strong>
+              </p>
+              <p style="margin-top: 20px;">Reason: ${reason}</p>
+            </div>
+            <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
+              Log In to View Details
+            </a>
             <p style="margin-top: 50px; color: #888; font-size: 16px;">
               — The Prosperity Tech Team
             </p>

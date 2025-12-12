@@ -397,7 +397,7 @@ export class ApiClientService {
     args: any,
     methodName: string,
   ): Promise<SoapResponse<T>> {
-    const isBenzine = true;
+    const isBenzine = endpoint.includes('benzine');
     const baseUrl = this.config.endpoints[isBenzine ? 'benzine' : 'octane'];
     const wsdlUrl = `${baseUrl}${endpoint}?wsdl`;
     const login = await this.getLoginDetails(baseUrl);
