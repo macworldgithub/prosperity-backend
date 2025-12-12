@@ -218,8 +218,8 @@ export class EmailService {
       : '';
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      // to: 'brian@bele.ai, lee@bele.ai',
-      to: `karimjawwad09@gmail.com`,
+      to: 'brian@bele.ai, lee@bele.ai',
+      // to: `karimjawwad09@gmail.com`,
       subject: `Failure in ${functionName}`,
       html: `
       <!DOCTYPE html>
@@ -319,8 +319,8 @@ export class EmailService {
   async sendOrderCompletionEmail(customerEmail: string, orderId: string) {
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      // to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
-      to: `karimjawwad09@gmail.com`,
+      to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
+      // to: `karimjawwad09@gmail.com`,
       subject: 'Your Order Has Been Completed',
       html: `
       <!DOCTYPE html>
@@ -405,8 +405,8 @@ export class EmailService {
   ) {
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      // to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
-      to: `karimjawwad09@gmail.com`,
+      to: `lee@bele.ai, brian@bele.ai, ${customerEmail}`,
+      // to: `karimjawwad09@gmail.com`,
       subject: `Order ${orderId} Failed or Rejected`,
       html: `
       <!DOCTYPE html>
