@@ -865,7 +865,7 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
 
       while (hasToolCalls) {
         const response = await this.client.chat.completions.create({
-          model: 'grok-2-latest',
+          model: 'grok-3-latest',
           messages: messages as any[],
           tools,
           tool_choice: 'auto',
