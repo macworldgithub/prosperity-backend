@@ -690,6 +690,10 @@ ${brand?.name || 'Prosperity Tech'} AI Assistant
             result = await this.numberService.selectNumber(args.number);
             break;
 
+          case 'delete_customer':
+            result = await this.customerService.deleteCustomer(args.custNo);
+            break;
+
           default:
             result = { error: 'Unknown function' };
         }
@@ -783,7 +787,7 @@ For sign-up flows: When user wants to sign up or create an account, collect requ
 After creating customer, call reserve_numbers to get number options and present them to the user.
 Once user chooses a number, call select_number with the chosen number.
 Inform the user of each step's result.
-
+For account deletion flows: When user wants to delete account, ask for confirmation: "Are you sure you want to delete your account? This action is permanent and cannot be undone." If they confirm yes, collect custNo (if not known), then call delete_customer tool. Inform the user of the result.
 ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
 `.trim(),
     };
@@ -849,6 +853,20 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
               },
             },
             required: ['number'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'delete_customer',
+          description: 'Delete a customer account',
+          parameters: {
+            type: 'object',
+            properties: {
+              custNo: { type: 'string', description: 'Customer number' },
+            },
+            required: ['custNo'],
           },
         },
       },
