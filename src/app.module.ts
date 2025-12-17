@@ -59,6 +59,7 @@ import { QrCodeModule } from './qrcode/qrcode.module';
 import { EmailModule } from './email/email.module';
 import { LoggerModule } from './logger/logger.module';
 import { PlanModule } from './plan/plan.module';
+import { StatesModule } from './states/states.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -106,6 +107,7 @@ import { PlanModule } from './plan/plan.module';
     BillModule,
     ChatModule,
     PlanModule,
+    StatesModule,
   ],
 })
 export class AppModule {}
