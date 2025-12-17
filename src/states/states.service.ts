@@ -24,6 +24,16 @@ export class StatesService {
   }
 
   getAllStates(): State[] {
+    this.states = [
+      { name: 'New South Wales', code: 'NSW' },
+      { name: 'Victoria', code: 'VIC' },
+      { name: 'Queensland', code: 'QLD' },
+      { name: 'South Australia', code: 'SA' },
+      { name: 'Western Australia', code: 'WA' },
+      { name: 'Tasmania', code: 'TAS' },
+      { name: 'Australian Capital Territory', code: 'ACT' },
+      { name: 'Northern Territory', code: 'NT' },
+    ];
     return this.states;
   }
 }
