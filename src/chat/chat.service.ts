@@ -639,8 +639,8 @@ ${brand?.name || 'Prosperity Tech'} AI Assistant
                 sal: '',
                 dob_port: args.dob,
                 orderNotificationEmail: args.email,
-                custAuthorityType: '',
-                custAuthorityNo: '',
+                custAuthorityType: args.custAuthorityType,
+                custAuthorityNo: args.custAuthorityNo,
               },
             };
             const createResult = await this.customerService.addCustomer(dto);
@@ -742,26 +742,6 @@ ${brand?.name || 'Prosperity Tech'} AI Assistant
       ? `${brand.name} here, your AI assistant for ${brand.company}. ${brand.charity}.`
       : `${brand.name} here, your AI assistant for ${brand.company}.`;
 
-    //     const systemPrompt: Message = {
-    //       role: 'system',
-    //       content: `
-    // You are ${brand.name}, an empathetic and efficient AI customer support assistant for ${brand.company}.
-    // Use the following knowledge base to answer queries accurately: ${KNOWLEDGE_BASE}
-
-    // When asked "Who are you?", respond exactly:
-    // "${intro} I'm here to help with your mobile plan, billing, or tech support."
-
-    // Start with empathy only if the query is issue-related; otherwise, be direct and positive.
-    // Keep responses concise (2–4 sentences), professional, and engaging.
-    // If you cannot resolve or user insists on human, respond exactly with: "${escalationMessage}"
-    // If query is off-topic, respond: "I'm sorry, but I'm here to help with ${brand.company} mobile services. Could you please ask about plans, billing, or support?"
-    // For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode, pin), then call add_customer tool.
-    // After creating customer, call reserve_numbers to get number options and present them to the user.
-    // Once user chooses a number, call select_number with the chosen number.
-    // Inform the user of each step's result.
-    // ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
-    // `.trim(),
-    //     };
     const systemPrompt: Message = {
       role: 'system',
       content: `
@@ -783,7 +763,7 @@ When asked "Who are you?", respond exactly:
 Start with empathy only if the query is issue-related; otherwise, be direct and positive.
 If query is off-topic, respond: "I'm sorry, but I'm here to help with ${brand.company} mobile services. Could you please ask about plans, billing, or support?"
 
-For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode, pin), then call add_customer tool.
+For sign-up flows: When user wants to sign up or create an account, collect required details (firstName, surname, email, phone, dob (YYYY-MM-DD), address, suburb, state, postcode, pin, custAuthorityType, custAuthorityNo), then call add_customer tool.
 After creating customer, call reserve_numbers to get number options and present them to the user.
 Once user chooses a number, call select_number with the chosen number.
 Inform the user of each step's result.
@@ -792,6 +772,44 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
 `.trim(),
     };
     const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+      // {
+      //   type: 'function',
+      //   function: {
+      //     name: 'add_customer',
+      //     description:
+      //       'Create a new customer account with the provided details',
+      //     parameters: {
+      //       type: 'object',
+      //       properties: {
+      //         firstName: { type: 'string', description: 'First name' },
+      //         surname: { type: 'string', description: 'Last name' },
+      //         email: { type: 'string', description: 'Email address' },
+      //         phone: { type: 'string', description: 'Phone number' },
+      //         dob: {
+      //           type: 'string',
+      //           description: 'Date of birth (YYYY-MM-DD)',
+      //         },
+      //         address: { type: 'string', description: 'Street address' },
+      //         suburb: { type: 'string', description: 'Suburb' },
+      //         state: { type: 'string', description: 'State (e.g., VIC)' },
+      //         postcode: { type: 'string', description: 'Postcode' },
+      //         pin: { type: 'string', description: 'User PIN' },
+      //       },
+      //       required: [
+      //         'firstName',
+      //         'surname',
+      //         'email',
+      //         'phone',
+      //         'dob',
+      //         'address',
+      //         'suburb',
+      //         'state',
+      //         'postcode',
+      //         'pin',
+      //       ],
+      //     },
+      //   },
+      // },
       {
         type: 'function',
         function: {
@@ -814,6 +832,14 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
               state: { type: 'string', description: 'State (e.g., VIC)' },
               postcode: { type: 'string', description: 'Postcode' },
               pin: { type: 'string', description: 'User PIN' },
+              custAuthorityType: {
+                type: 'string',
+                description: 'Customer authority type (e.g., PA, DL, PP)',
+              },
+              custAuthorityNo: {
+                type: 'string',
+                description: 'Customer authority number (ID number)',
+              },
             },
             required: [
               'firstName',
@@ -826,6 +852,8 @@ ${nextQuestion ? `Ask: "${nextQuestion}"` : ''}
               'state',
               'postcode',
               'pin',
+              'custAuthorityType',
+              'custAuthorityNo',
             ],
           },
         },
