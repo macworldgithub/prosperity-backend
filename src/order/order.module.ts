@@ -10,6 +10,7 @@ import { EmailService } from 'src/common/services/email.service';
 import { CustomerService } from 'src/customer/customer.service';
 import { Customer, CustomerSchema } from 'src/schemas/customer.schema';
 import { User, UserSchema } from 'src/schemas/user.schema';
+import { UserService } from 'src/user/user.service';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -23,6 +24,6 @@ import { User, UserSchema } from 'src/schemas/user.schema';
     }),
   ],
   controllers: [OrderController],
-  providers: [OrderService, GoogleSheetsService, EmailService, CustomerService],
+  providers: [OrderService, GoogleSheetsService, EmailService, CustomerService,UserService],
 })
 export class OrderModule {}

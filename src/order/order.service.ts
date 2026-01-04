@@ -13,6 +13,7 @@ import { SoapResponse } from '../common/types/soap-response.type';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 import { EmailService } from 'src/common/services/email.service';
 import { CustomerService } from '../customer/customer.service';
+import { UserService } from 'src/user/user.service';
 interface OrderCreateResponse {
   orderId: string;
   errorMessage?: string;
@@ -33,6 +34,7 @@ export class OrderService {
     private googleSheetsService: GoogleSheetsService,
     private emailService: EmailService,
     private customerService: CustomerService,
+    private userService: UserService,
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
   ) {}
@@ -96,59 +98,144 @@ export class OrderService {
         });
       });
   }
-  private startPollingOrder(
-    orderId: string,
-    custNo: string,
-    customerEmail: string,
-  ) {
-    let attempts = 0;
-    const maxAttempts = 5;
-    const intervalMs = 5 * 60 * 1000; // 5 minutes
-    const timer = setInterval(async () => {
-      attempts++;
-      try {
-        const response = await this.queryOrder(orderId);
-        if ('return' in response) {
-          const ret = response.return;
-          const payload =
-            'orderQueryResponse' in ret ? ret.orderQueryResponse : ret;
-          const internalStatus = payload?.internalStatus ?? payload?.status;
-          if (internalStatus) {
-            const status = internalStatus.toUpperCase();
-            if (status === 'COMPLETE') {
-              await this.emailService.sendOrderCompletionEmail(
-                customerEmail,
-                orderId,
-              );
-              clearInterval(timer);
-              return;
-            } else if (status === 'REJECTED') {
-              await this.emailService.sendOrderFailureEmail(
-                customerEmail,
-                orderId,
-                payload?.errorMessage || 'Order rejected',
-              );
-              clearInterval(timer);
-              return;
+  // private startPollingOrder(
+  //   orderId: string,
+  //   custNo: string,
+  //   customerEmail: string,
+  // ) {
+  //   let attempts = 0;
+  //   const maxAttempts = 5;
+  //   const intervalMs = 5 * 60 * 1000; // 5 minutes
+  //   const timer = setInterval(async () => {
+  //     attempts++;
+  //     try {
+  //       const response = await this.queryOrder(orderId);
+  //       if ('return' in response) {
+  //         const ret = response.return;
+  //         const payload =
+  //           'orderQueryResponse' in ret ? ret.orderQueryResponse : ret;
+  //         const internalStatus = payload?.internalStatus ?? payload?.status;
+  //         if (internalStatus) {
+  //           const status = internalStatus.toUpperCase();
+  //           if (status === 'COMPLETE') {
+  //             await this.emailService.sendOrderCompletionEmail(
+  //               customerEmail,
+  //               orderId,
+  //             );
+  //             clearInterval(timer);
+  //             return;
+  //           } else if (status === 'REJECTED') {
+  //             await this.emailService.sendOrderFailureEmail(
+  //               customerEmail,
+  //               orderId,
+  //               payload?.errorMessage || 'Order rejected',
+  //             );
+  //             clearInterval(timer);
+  //             return;
+  //           }
+  //         }
+  //       }
+  //       if (attempts >= maxAttempts) {
+  //         clearInterval(timer);
+  //         await this.emailService.sendFailureEmail(
+  //           'Order Polling',
+  //           `Order ${orderId} not completed after ${maxAttempts} attempts`,
+  //           { orderId, custNo },
+  //         );
+  //       }
+  //     } catch (err) {
+  //       console.error('Polling error:', err);
+  //       if (attempts >= maxAttempts) {
+  //         clearInterval(timer);
+  //       }
+  //     }
+  //   }, intervalMs);
+  // }
+private async startPollingOrder(
+  orderId: string,
+  custNo: string,
+  customerEmail: string,
+) {
+  let attempts = 0;
+  const maxAttempts = 5;
+  const intervalMs = 5 * 60 * 1000; // 5 minutes
+
+  const timer = setInterval(async () => {
+    attempts++;
+    try {
+      const response = await this.queryOrder(orderId);
+      if ('return' in response) {
+        const ret = response.return;
+        const payload =
+          'orderQueryResponse' in ret ? ret.orderQueryResponse : ret;
+
+        const internalStatus = payload?.internalStatus ?? payload?.status;
+
+        if (internalStatus) {
+          const status = internalStatus.toUpperCase();
+
+          if (status === 'COMPLETE') {
+            // === NEW: Send Physical SIM activation email if it was a physical SIM ===
+            const numericOrderId = Number(orderId);
+            const filter = isNaN(numericOrderId)
+              ? { orderId }
+              : { orderId: numericOrderId };
+
+            const order = await this.orderModel.findOne(filter);
+
+            if (order && !order.isEsim) {
+              // Get customer name for nicer email
+              const customer = await this.userService.findByCustNo(custNo);
+              // const firstName = customer?.firstName || 'Customer';
+              const fullName = customer?.name  || 'Customer';
+
+              await this.emailService.sendPhysicalSimActivationEmail({
+                to: customerEmail,
+                fullName,
+                phoneNumber: order.msn,
+                customerNumber: custNo,
+              });
             }
+            // === END OF NEW CODE ===
+
+            // Your existing completion email (kept unchanged)
+            // await this.emailService.sendOrderCompletionEmail(
+            //   customerEmail,
+            //   orderId,
+            // );
+
+            clearInterval(timer);
+            return;
+          }
+
+          if (status === 'REJECTED') {
+            await this.emailService.sendOrderFailureEmail(
+              customerEmail,
+              orderId,
+              payload?.errorMessage || 'Order rejected',
+            );
+            clearInterval(timer);
+            return;
           }
         }
-        if (attempts >= maxAttempts) {
-          clearInterval(timer);
-          await this.emailService.sendFailureEmail(
-            'Order Polling',
-            `Order ${orderId} not completed after ${maxAttempts} attempts`,
-            { orderId, custNo },
-          );
-        }
-      } catch (err) {
-        console.error('Polling error:', err);
-        if (attempts >= maxAttempts) {
-          clearInterval(timer);
-        }
       }
-    }, intervalMs);
-  }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(timer);
+        await this.emailService.sendFailureEmail(
+          'Order Polling',
+          `Order ${orderId} not completed after ${maxAttempts} attempts`,
+          { orderId, custNo },
+        );
+      }
+    } catch (err) {
+      console.error('Polling error:', err);
+      if (attempts >= maxAttempts) {
+        clearInterval(timer);
+      }
+    }
+  }, intervalMs);
+}
   async activateNumber(
     dto: ActivateNumberDto,
   ): Promise<SoapResponse<OrderCreateResponse>> {
@@ -438,6 +525,7 @@ export class OrderService {
           .catch(console.error);
       }
     }
+    console.log(result);
     return result;
   }
   async getPlans(): Promise<SoapResponse<any>> {

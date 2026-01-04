@@ -485,4 +485,101 @@ export class EmailService {
       `,
     });
   }
+  async sendPhysicalSimActivationEmail(params: {
+  to: string;
+  fullName: string;
+  phoneNumber: string;
+  customerNumber: string;
+}) {
+  const { to, fullName, phoneNumber, customerNumber } = params;
+
+  await this.transporter.sendMail({
+    from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
+    to: `${to}, lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com`,
+    subject: 'Your SIM Card is Now Active!',
+    html: `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Your SIM is Active - Prosperity Tech</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #145374, #0f3f5a); padding: 60px 20px; text-align: center; }
+          .brand-title { color: white; font-size: 52px; font-weight: 900; margin: 0; letter-spacing: 3px; text-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+          .content { padding: 60px 40px; color: #333; line-height: 1.7; }
+          .info-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
+          .info-table td { padding: 12px 0; border-bottom: 1px solid #eee; }
+          .label { font-weight: bold; color: #145374; width: 180px; }
+          .value { color: #333; }
+          .important-box { background: #e8f4f8; border-left: 5px solid #145374; padding: 25px; margin: 35px 0; border-radius: 8px; }
+          .btn { display: inline-block; background: #145374; color: white; padding: 18px 50px; text-decoration: none; border-radius: 60px; font-weight: bold; font-size: 18px; margin: 20px 0; box-shadow: 0 10px 25px rgba(20,83,116,0.4); }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 class="brand-title">Prosperity Tech</h1>
+          </div>
+          <div class="content">
+            <h2 style="color: #145374; font-size: 28px;">Dear ${fullName},</h2>
+            <p style="font-size: 18px;">
+              Thank you for requesting your SIM activation — <strong>this is now active and ready to use</strong>.
+            </p>
+
+            <h3 style="color: #145374; margin-top: 40px;">Account Information</h3>
+            <table class="info-table">
+              <tr>
+                <td class="label">Customer Name:</td>
+                <td class="value">${fullName}</td>
+              </tr>
+              <tr>
+                <td class="label">Phone Number:</td>
+                <td class="value">${phoneNumber}</td>
+              </tr>
+              <tr>
+                <td class="label">Customer Number:</td>
+                <td class="value">${customerNumber}</td>
+              </tr>
+            </table>
+
+            <div class="important-box">
+              <h3 style="color: #145374; margin-top: 0;">Getting Started</h3>
+              <p><strong>Reinsert the SIM card then restart the phone</strong> to start using your new SIM card.</p>
+
+              <h3 style="color: #145374; margin-top: 25px;">Your First Bill</h3>
+              <p>
+                Your first bill will be higher than your monthly plan price.<br>
+                We bill in advance, so your first bill will be for the remainder of this month plus next month.<br>
+                <em>For example: if you activate mid-December, you will be charged pro-rata for December + full January in advance.</em>
+              </p>
+
+              <h3 style="color: #145374; margin-top: 25px;">Direct Debit</h3>
+              <p>
+                You have direct debit set up.<br>
+                We will use the bank account or credit card details you provided.<br>
+                An invoice will be sent at the start of each month showing the amount to be debited.<br>
+                <strong>No action is required</strong> — it's all automatic.
+              </p>
+            </div>
+
+            <p style="text-align: center;">
+              <a href="https://prosperitytech.omnisuiteai.com/login" class="btn">
+                Log In to Your Account
+              </a>
+            </p>
+
+            <p style="margin-top: 50px; color: #888; font-size: 16px; text-align: center;">
+              Thank you from the team at<br>
+              <strong>Prosperity Tech</strong>
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  });
+}
 }
