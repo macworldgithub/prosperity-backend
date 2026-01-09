@@ -151,91 +151,86 @@ export class OrderService {
   //     }
   //   }, intervalMs);
   // }
-private async startPollingOrder(
-  orderId: string,
-  custNo: string,
-  customerEmail: string,
-) {
-  let attempts = 0;
-  const maxAttempts = 5;
-  const intervalMs = 5 * 60 * 1000; // 5 minutes
+  private async startPollingOrder(
+    orderId: string,
+    custNo: string,
+    customerEmail: string,
+  ) {
+    let attempts = 0;
+    const maxAttempts = 5;
+    const intervalMs = 5 * 60 * 1000; // 5 minutes
 
-  const timer = setInterval(async () => {
-    attempts++;
-    try {
-      const response = await this.queryOrder(orderId);
-      if ('return' in response) {
-        const ret = response.return;
-        const payload =
-          'orderQueryResponse' in ret ? ret.orderQueryResponse : ret;
+    const timer = setInterval(async () => {
+      attempts++;
 
-        const internalStatus = payload?.internalStatus ?? payload?.status;
+      try {
+        const response = await this.queryOrder(orderId);
 
-        if (internalStatus) {
-          const status = internalStatus.toUpperCase();
+        if ('return' in response) {
+          const ret = response.return;
+          const payload =
+            'orderQueryResponse' in ret ? ret.orderQueryResponse : ret;
 
-          if (status === 'COMPLETE') {
-            // === NEW: Send Physical SIM activation email if it was a physical SIM ===
-            const numericOrderId = Number(orderId);
-            const filter = isNaN(numericOrderId)
-              ? { orderId }
-              : { orderId: numericOrderId };
+          const internalStatus = payload?.internalStatus ?? payload?.status;
 
-            const order = await this.orderModel.findOne(filter);
+          if (internalStatus) {
+            const status = internalStatus.toUpperCase();
 
-            if (order && !order.isEsim) {
-              // Get customer name for nicer email
-              const customer = await this.userService.findByCustNo(custNo);
-              // const firstName = customer?.firstName || 'Customer';
-              const fullName = customer?.name  || 'Customer';
+            if (status === 'COMPLETE') {
+              // ✅ orderId is STRING in MongoDB
+              const order = await this.orderModel.findOne({ orderId });
 
-              await this.emailService.sendPhysicalSimActivationEmail({
-                to: customerEmail,
-                fullName,
-                phoneNumber: order.msn,
-                customerNumber: custNo,
-              });
+              if (order && !order.isEsim) {
+                const customer = await this.userService.findByCustNo(custNo);
+                const fullName = customer?.name?.trim() || 'Customer';
+
+                await this.emailService.sendPhysicalSimActivationEmail({
+                  to: customerEmail,
+                  fullName,
+                  phoneNumber: order.msn,
+                  customerNumber: custNo,
+                });
+              }
+
+              // Existing completion email (unchanged)
+              await this.emailService.sendOrderCompletionEmail(
+                customerEmail,
+                orderId,
+              );
+
+              clearInterval(timer);
+              return;
             }
-            // === END OF NEW CODE ===
 
-            // Your existing completion email (kept unchanged)
-            // await this.emailService.sendOrderCompletionEmail(
-            //   customerEmail,
-            //   orderId,
-            // );
-
-            clearInterval(timer);
-            return;
-          }
-
-          if (status === 'REJECTED') {
-            await this.emailService.sendOrderFailureEmail(
-              customerEmail,
-              orderId,
-              payload?.errorMessage || 'Order rejected',
-            );
-            clearInterval(timer);
-            return;
+            if (status === 'REJECTED') {
+              await this.emailService.sendOrderFailureEmail(
+                customerEmail,
+                orderId,
+                payload?.errorMessage || 'Order rejected',
+              );
+              clearInterval(timer);
+              return;
+            }
           }
         }
-      }
 
-      if (attempts >= maxAttempts) {
-        clearInterval(timer);
-        await this.emailService.sendFailureEmail(
-          'Order Polling',
-          `Order ${orderId} not completed after ${maxAttempts} attempts`,
-          { orderId, custNo },
-        );
+        if (attempts >= maxAttempts) {
+          clearInterval(timer);
+          await this.emailService.sendFailureEmail(
+            'Order Polling',
+            `Order ${orderId} not completed after ${maxAttempts} attempts`,
+            { orderId, custNo },
+          );
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+        if (attempts >= maxAttempts) {
+          clearInterval(timer);
+        }
       }
-    } catch (err) {
-      console.error('Polling error:', err);
-      if (attempts >= maxAttempts) {
-        clearInterval(timer);
-      }
-    }
-  }, intervalMs);
-}
+    }, intervalMs);
+  }
+
   async activateNumber(
     dto: ActivateNumberDto,
   ): Promise<SoapResponse<OrderCreateResponse>> {
