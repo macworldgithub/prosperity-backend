@@ -157,7 +157,7 @@ export class OrderService {
     customerEmail: string,
   ) {
     let attempts = 0;
-    const maxAttempts = 5;
+    const maxAttempts = 24;
     const intervalMs = 5 * 60 * 1000; // 5 minutes
 
     const timer = setInterval(async () => {

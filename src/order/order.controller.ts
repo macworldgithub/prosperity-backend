@@ -1,180 +1,3 @@
-// import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
-// import { OrderService } from './order.service';
-// import { formatResponse } from '../common/utils/response-formatter';
-// import { ActivateNumberDto } from './dto/activate-number.dto';
-// import { ActivatePortNumberDto } from './dto/activate-port-number.dto';
-// import { UpdatePlanDto } from './dto/update-plan.dto';
-// import {
-//   ApiTags,
-//   ApiOperation,
-//   ApiResponse,
-//   ApiParam,
-//   ApiBody,
-// } from '@nestjs/swagger';
-
-// @ApiTags('orders')
-// @Controller('api/v1/orders')
-// export class OrderController {
-//   constructor(private orderService: OrderService) {}
-
-//   @Get(':orderId')
-//   @ApiOperation({ summary: 'Get order details' })
-//   @ApiParam({ name: 'orderId', description: 'Order ID' })
-//   @ApiResponse({ status: 200, description: 'Order retrieved successfully' })
-//   async getOrder(@Param('orderId') orderId: string) {
-//     const result = await this.orderService.queryOrder(orderId);
-//     return formatResponse(
-//       result.return || result,
-//       'Order retrieved successfully',
-//     );
-//   }
-
-//   @Post('activate')
-//   @ApiOperation({ summary: 'Activate a number' })
-//   @ApiBody({ type: ActivateNumberDto })
-//   @ApiResponse({ status: 200, description: 'Number activated successfully' })
-//   async activateNumber(@Body() activateNumberDto: ActivateNumberDto) {
-//     const result = await this.orderService.activateNumber(activateNumberDto);
-//     return formatResponse(
-//       result.return || result,
-//       'Number activated successfully',
-//     );
-//   }
-
-//   @Post('activate/port')
-//   @ApiOperation({ summary: 'Activate a ported number' })
-//   @ApiBody({ type: ActivatePortNumberDto })
-//   @ApiResponse({
-//     status: 200,
-//     description: 'Ported number activated successfully',
-//   })
-//   async activatePortNumber(
-//     @Body() activatePortNumberDto: ActivatePortNumberDto,
-//   ) {
-//     const result = await this.orderService.activatePortNumber(
-//       activatePortNumberDto,
-//     );
-//     return formatResponse(
-//       result.return || result,
-//       'Ported number activated successfully',
-//     );
-//   }
-
-//   @Patch(':custNo/plan')
-//   @ApiOperation({ summary: 'Update customer plan' })
-//   @ApiParam({ name: 'custNo', description: 'Customer number' })
-//   @ApiBody({ type: UpdatePlanDto })
-//   @ApiResponse({ status: 200, description: 'Plan updated successfully' })
-//   async updatePlan(
-//     @Param('custNo') custNo: string,
-//     @Body() updatePlanDto: UpdatePlanDto,
-//   ) {
-//     const result = await this.orderService.updatePlan(updatePlanDto, custNo);
-//     return formatResponse(result.return || result, 'Plan updated successfully');
-//   }
-
-//   @Get('plans')
-//   @ApiOperation({ summary: 'Get all available plans' })
-//   @ApiResponse({ status: 200, description: 'Plans retrieved successfully' })
-//   async getPlans() {
-//     const result = await this.orderService.getPlans();
-//     return formatResponse(
-//       result.return || result,
-//       'Plans retrieved successfully',
-//     );
-//   }
-// }
-
-// import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
-// import { OrderService } from './order.service';
-// import { formatResponse } from '../common/utils/response-formatter';
-// import { ActivateNumberDto } from './dto/activate-number.dto';
-// import { ActivatePortNumberDto } from './dto/activate-port-number.dto';
-// import { UpdatePlanDto } from './dto/update-plan.dto';
-// import {
-//   ApiTags,
-//   ApiOperation,
-//   ApiResponse,
-//   ApiParam,
-//   ApiBody,
-// } from '@nestjs/swagger';
-// import { SoapResponse } from '../common/types/soap-response.type';
-
-// @ApiTags('orders')
-// @Controller('api/v1/orders')
-// export class OrderController {
-//   constructor(private orderService: OrderService) {}
-
-//   @Get(':orderId')
-//   @ApiOperation({ summary: 'Get order details' })
-//   @ApiParam({ name: 'orderId', description: 'Order ID' })
-//   @ApiResponse({ status: 200, description: 'Order retrieved successfully' })
-//   async getOrder(@Param('orderId') orderId: string) {
-//     const result: SoapResponse = await this.orderService.queryOrder(orderId);
-//     return formatResponse(
-//       'return' in result ? result.return : result,
-//       'Order retrieved successfully',
-//     );
-//   }
-
-//   @Post('activate')
-//   @ApiOperation({ summary: 'Activate a number' })
-//   @ApiBody({ type: ActivateNumberDto })
-//   @ApiResponse({ status: 200, description: 'Number activated successfully' })
-//   async activateNumber(@Body() dto: ActivateNumberDto) {
-//     const result: SoapResponse = await this.orderService.activateNumber(dto);
-//     return formatResponse(
-//       'return' in result ? result.return : result,
-//       'Number activated successfully',
-//     );
-//   }
-
-//   @Post('activate/port')
-//   @ApiOperation({ summary: 'Activate a ported number' })
-//   @ApiBody({ type: ActivatePortNumberDto })
-//   @ApiResponse({
-//     status: 200,
-//     description: 'Ported number activated successfully',
-//   })
-//   async activatePortNumber(@Body() dto: ActivatePortNumberDto) {
-//     const result: SoapResponse =
-//       await this.orderService.activatePortNumber(dto);
-//     return formatResponse(
-//       'return' in result ? result.return : result,
-//       'Ported number activated successfully',
-//     );
-//   }
-
-//   @Patch(':custNo/plan')
-//   @ApiOperation({ summary: 'Update customer plan' })
-//   @ApiParam({ name: 'custNo', description: 'Customer number' })
-//   @ApiBody({ type: UpdatePlanDto })
-//   @ApiResponse({ status: 200, description: 'Plan updated successfully' })
-//   async updatePlan(
-//     @Param('custNo') custNo: string,
-//     @Body() dto: UpdatePlanDto,
-//   ) {
-//     const result: SoapResponse = await this.orderService.updatePlan(
-//       dto,
-//       custNo,
-//     );
-//     return formatResponse(
-//       'return' in result ? result.return : result,
-//       'Plan updated successfully',
-//     );
-//   }
-
-//   @Get('plans')
-//   @ApiOperation({ summary: 'Get all available plans' })
-//   @ApiResponse({ status: 200, description: 'Plans retrieved successfully' })
-//   async getPlans() {
-//     const result: SoapResponse = await this.orderService.getPlans();
-//     return formatResponse(
-//       'return' in result ? result.return : result,
-//       'Plans retrieved successfully',
-//     );
-//   }
-// }
 import {
   Controller,
   Get,
@@ -404,3 +227,67 @@ export class OrderController {
     );
   }
 }
+
+// POST /api/v1/orders/test/polling/:orderId
+// ------------------------------------------------------------------------
+// @Post('test/polling/:orderId')
+// @ApiOperation({
+//   summary: 'TEST ONLY - Start polling for an existing order',
+//   description: 'Manually triggers the polling mechanism for testing/debugging purposes. Only available in non-production environments.',
+// })
+// @ApiParam({
+//   name: 'orderId',
+//   type: String,
+//   example: 'ORD123456789',
+//   description: 'Order ID to start polling for',
+// })
+// @ApiResponse({
+//   status: 200,
+//   description: 'Polling started (runs in background)',
+//   content: {
+//     'application/json': {
+//       example: {
+//         success: true,
+//         message: 'Polling process started for order ORD123456789',
+//         note: 'This is a test/development endpoint only',
+//       },
+//     },
+//   },
+// })
+// @ApiBadRequestResponse({
+//   description: 'Order ID is required',
+// })
+// async testStartPolling(@Param('orderId') orderId: string) {
+//   // Optional: protect this endpoint in production
+//   if (process.env.NODE_ENV === 'production') {
+//     throw new AppError('This endpoint is not available in production', 403);
+//   }
+
+//   if (!orderId) {
+//     throw new AppError('orderId is required', 400);
+//   }
+
+//   // You need customer email & custNo → most practical ways:
+//   // 1. Get from DB (best)
+//   // 2. Accept them as query/body params (for more flexibility in testing)
+
+//   const order = await this.orderService['orderModel'].findOne({ orderId });
+
+//   if (!order) {
+//     throw new AppError(`Order ${orderId} not found in database`, 404);
+//   }
+
+//   const custNo = order.custNo;
+//   const customer = await this.orderService['customerModel'].findOne({ custNo });
+
+//   const email = customer?.email || 'test-debug@example.com';
+
+//   // Start the polling
+//   // Note: we're using private method → need type assertion or make helper public/protected
+//   (this.orderService as any).startPollingOrder(orderId, custNo, email);
+
+//   return formatResponse(
+//     null,
+//     `Polling process started for order ${orderId} (custNo: ${custNo}, email: ${email})`,
+//   );
+// }
