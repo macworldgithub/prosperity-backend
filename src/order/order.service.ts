@@ -180,7 +180,6 @@ export class OrderService {
               // ✅ orderId is STRING in MongoDB
               const order = await this.orderModel.findOne({ orderId });
 
-              if (order && !order.isEsim) {
                 const customer = await this.userService.findByCustNo(custNo);
                 const fullName = customer?.name?.trim() || 'Customer';
 
@@ -190,7 +189,7 @@ export class OrderService {
                   phoneNumber: order.msn,
                   customerNumber: custNo,
                 });
-              }
+              
 
               // Existing completion email (unchanged)
               await this.emailService.sendOrderCompletionEmail(
