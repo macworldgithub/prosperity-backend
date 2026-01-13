@@ -1155,7 +1155,6 @@ export class EmailService {
                         December plus B) January in advance.
                       </div>
 
-                      <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">You have direct debit setup</div>
 
                       <div class="body-paragraph" style="margin:8px 0 12px 0;">
                         We will use the bank account or credit card details you provided in your activation request form.<br>
