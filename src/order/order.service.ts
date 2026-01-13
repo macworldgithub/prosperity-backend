@@ -247,7 +247,7 @@ export class OrderService {
           orderItems: {
             wmeNewReqItem: {
               lineType: 'R',
-              lineName: 'SimplyBig Unlimited',
+              lineName: 'Belar',
               planNo: dto.planNo,
               agentId: dto.agentId,
               orderItemAddress: {
@@ -344,7 +344,7 @@ export class OrderService {
           orderItems: {
             wmePortInReqItem: {
               lineType: 'R',
-              lineName: 'SimplyBig Unlimited',
+              lineName: 'Belar',
               planNo: dto.planNo,
               agentId: dto.agentId,
               orderItemAddress: {
