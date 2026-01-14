@@ -883,7 +883,9 @@ export class EmailService {
   async sendOrderCompletionEmail(customerEmail: string, orderId: string) {
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      to: `lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com, ${customerEmail}`,
+      // to: `lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com, ${customerEmail}`,
+      to: customerEmail, // only the customer
+      bcc: 'lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com',
       // to: `karimjawwad09@gmail.com`,
       subject: 'Your Order Has Been Completed',
       html: `
@@ -1040,7 +1042,9 @@ export class EmailService {
 
     await this.transporter.sendMail({
       from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
-      to: `${to}, lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com`,
+      // to: `${to}, lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com`,
+      to: to, // only the customer
+      bcc: 'lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com',
       subject: 'Your SIM Card is Now Active!',
       html: `
       <!doctype html>
@@ -1180,6 +1184,151 @@ export class EmailService {
         </table>
       </body>
       </html>
+    `,
+      attachments: [
+        {
+          filename: 'belar.png',
+          path: 'capture.png', // keep or change to your logo path
+          cid: 'belar_logo',
+        },
+      ],
+    });
+  }
+  async sendESimActivationEmail(params: {
+    to: string;
+    fullName: string;
+    phoneNumber: string;
+    customerNumber: string;
+  }) {
+    const { to, fullName, phoneNumber, customerNumber } = params;
+
+    await this.transporter.sendMail({
+      from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
+      to: to, // only the customer
+      bcc: 'lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com',
+      subject: 'Your Belar Plan is Now Active!',
+      html: `
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <title>Your Plan is Active</title>
+      <style>
+        /* Basic reset */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table { border-collapse: collapse !important; }
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
+        a { color: #1a73e8; text-decoration: none; }
+
+        /* Container */
+        .email-wrapper { width: 100%; background: #ffffff; padding: 0; margin: 0; }
+
+        /* The inner content table -- max width for desktop */
+        .email-container { width: 100%; max-width: 720px; margin: 0 auto; }
+
+        /* Logo */
+        .logo { width: 160px; max-width: 40%; height: auto; display: block; margin: 36px auto 18px auto; }
+
+        /* Content cell */
+        .content { font-family: Arial, Helvetica, sans-serif; color: #111111; font-size: 14px; line-height: 20px; padding: 0 110px 40px 110px; text-align: left; }
+
+        /* Headings and paragraphs */
+        .greeting { margin: 12px 0 22px 0; }
+        .body-paragraph { margin: 8px 0 16px 0; }
+        .small-gap { height: 14px; }
+        .footer { text-align: center; padding: 28px 0 40px 0; font-size: 12px; color: #1a73e8; }
+
+        /* Make phone numbers, customer numbers break nicely on small screens */
+        .break-word { word-break: break-word; }
+
+        /* Responsive rules */
+        @media only screen and (max-width: 600px) {
+          .content { padding: 0 20px 30px 20px !important; font-size: 15px !important; line-height: 22px !important; }
+          .logo { width: 120px !important; margin-top: 24px !important; margin-bottom: 14px !important; }
+          .footer { padding: 20px 0 30px 0 !important; font-size: 13px !important; }
+        }
+
+        /* Outlook fallback to ensure fixed width */
+        @media all and (min-width:721px) {
+          .gmail-hide { display: none !important; }
+        }
+      </style>
+    </head>
+
+    <body style="margin:0; padding:0; background:#ffffff;">
+      <!-- outer wrapper -->
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-wrapper">
+        <tr>
+          <td align="center">
+            <!--[if mso]>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="720"><tr><td>
+            <![endif]-->
+
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container">
+              <!-- logo row -->
+              <tr>
+                <td align="center">
+                  <img src="cid:belar_logo" alt="Belar logo" class="logo" style="display:block; width:160px; max-width:40%; height:auto;" />
+                </td>
+              </tr>
+
+              <!-- content row -->
+              <tr>
+                <td class="content" style="font-family: Arial, Helvetica, sans-serif; color:#111111; font-size:14px; line-height:20px; padding:0 110px 40px 110px; text-align:left;">
+                  <p class="greeting" style="margin:12px 0 22px 0;">Hi ${fullName || ''},</p>
+
+                  <p class="body-paragraph" style="margin:8px 0 16px 0;">
+                    We’re thrilled to let you know that your Belar plan is now active.
+                  </p>
+
+                  <p class="body-paragraph" style="margin:8px 0 16px 0; font-weight:700;">
+                    Here are your account details for easy reference:
+                  </p>
+
+                  <p class="body-paragraph break-word" style="margin:4px 0 4px 0;">
+                    Phone Number: ${phoneNumber || ''}
+                  </p>
+
+                  <p class="body-paragraph break-word" style="margin:4px 0 16px 0;">
+                    Customer Number: ${customerNumber || ''}
+                  </p>
+
+                  <p class="body-paragraph" style="margin:8px 0 16px 0; font-weight:700;">
+                    A quick heads-up on your first bill:
+                  </p>
+
+                  <p class="body-paragraph" style="margin:8px 0 24px 0;">
+                    Your first bill will look a little different from your standard monthly plan. Because we bill in advance, it will simply include the plan cost for the rest of this month, plus the upcoming month.
+                  </p>
+
+                  <p class="body-paragraph" style="margin:8px 0 16px 0;">
+                    We'll send you an invoice on the 15th of each month before the payment is processed. It will come from <strong>confirmations@belarsystems.com.au</strong>
+                  </p>
+
+                  <p class="body-paragraph" style="margin:8px 0 16px 0;">
+                    If you have any questions at all, please don't hesitate to reach out. We're here to help.
+                  </p>
+
+                  <p class="body-paragraph" style="margin:24px 0 12px 0; font-weight:600;">
+                    Happy connecting!
+                  </p>
+
+                  <div class="footer" style="text-align:center; padding:28px 0 40px 0; font-size:12px; color:#1a73e8;">
+                    <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe</a> - <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe Preferences</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <!--[if mso]>
+            </td></tr></table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
     `,
       attachments: [
         {

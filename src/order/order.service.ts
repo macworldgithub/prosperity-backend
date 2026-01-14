@@ -176,23 +176,62 @@ export class OrderService {
           if (internalStatus) {
             const status = internalStatus.toUpperCase();
 
-           if (status === 'COMPLETE') {
-              // ✅ orderId is STRING in MongoDB
+            // if (status === 'COMPLETE') {
+            //   // ✅ orderId is STRING in MongoDB
+            //   const order = await this.orderModel.findOne({ orderId });
+
+            //   if (order && !order.isEsim) {
+            //     const customer = await this.userService.findByCustNo(custNo);
+            //     const fullName = customer?.name?.trim() || 'Customer';
+
+            //     await this.emailService.sendPhysicalSimActivationEmail({
+            //       to: customerEmail,
+            //       fullName,
+            //       phoneNumber: order.msn,
+            //       customerNumber: custNo,
+            //     });
+            //   }
+
+            //   // Existing completion email (unchanged)
+            //   await this.emailService.sendOrderCompletionEmail(
+            //     customerEmail,
+            //     orderId,
+            //   );
+
+            //   clearInterval(timer);
+            //   return;
+            // }
+            if (status === 'COMPLETE') {
+              // orderId is STRING in MongoDB
               const order = await this.orderModel.findOne({ orderId });
 
-              if (order) {
-                const customer = await this.userService.findByCustNo(custNo);
-                const fullName = customer?.name?.trim() || 'Customer';
+              if (!order) {
+                console.warn(`Order not found for orderId: ${orderId}`);
+                clearInterval(timer);
+                return;
+              }
 
+              // Fetch customer once — used for both email types
+              const customer = await this.userService.findByCustNo(custNo);
+              const fullName = customer?.name?.trim() || 'Customer';
+
+              if (order.isEsim) {
+                await this.emailService.sendESimActivationEmail({
+                  to: customerEmail,
+                  fullName,
+                  phoneNumber: order.msn || '',
+                  customerNumber: custNo,
+                });
+              } else {
                 await this.emailService.sendPhysicalSimActivationEmail({
                   to: customerEmail,
                   fullName,
-                  phoneNumber: order.msn,
+                  phoneNumber: order.msn || '',
                   customerNumber: custNo,
                 });
               }
 
-              // Existing completion email (unchanged)
+              // General completion email (always sent)
               await this.emailService.sendOrderCompletionEmail(
                 customerEmail,
                 orderId,
@@ -201,7 +240,6 @@ export class OrderService {
               clearInterval(timer);
               return;
             }
-
             if (status === 'REJECTED') {
               await this.emailService.sendOrderFailureEmail(
                 customerEmail,
