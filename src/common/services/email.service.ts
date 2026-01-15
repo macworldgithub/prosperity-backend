@@ -1032,6 +1032,167 @@ export class EmailService {
     });
   }
 
+  // async sendPhysicalSimActivationEmail(params: {
+  //   to: string;
+  //   fullName: string;
+  //   phoneNumber: string;
+  //   customerNumber: string;
+  // }) {
+  //   const { to, fullName, phoneNumber, customerNumber } = params;
+
+  //   await this.transporter.sendMail({
+  //     from: `"Prosperity Tech" <${process.env.SMTP_USER_EMAIL}>`,
+  //     // to: `${to}, lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com`,
+  //     to: to, // only the customer
+  //     bcc: 'lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com',
+  //     subject: 'Your SIM Card is Now Active!',
+  //     html: `
+  //     <!doctype html>
+  //     <html lang="en">
+  //     <head>
+  //       <meta charset="utf-8"/>
+  //       <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  //       <title>Your SIM is Active</title>
+  //       <style>
+  //         /* Basic reset */
+  //         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  //         table { border-collapse: collapse !important; }
+  //         img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
+  //         a { color: #1a73e8; text-decoration: none; }
+
+  //         /* Container */
+  //         .email-wrapper { width: 100%; background: #ffffff; padding: 0; margin: 0; }
+
+  //         /* The inner content table -- max width for desktop */
+  //         .email-container { width: 100%; max-width: 720px; margin: 0 auto; }
+
+  //         /* Logo */
+  //         .logo { width: 160px; max-width: 40%; height: auto; display: block; margin: 36px auto 18px auto; }
+
+  //         /* Content cell */
+  //         .content { font-family: Arial, Helvetica, sans-serif; color: #111111; font-size: 14px; line-height: 20px; padding: 0 110px 40px 110px; text-align: left; }
+
+  //         /* Headings and paragraphs */
+  //         .greeting { margin: 12px 0 22px 0; }
+  //         .section-heading { margin-top: 18px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 0.3px; }
+  //         .body-paragraph { margin: 8px 0 12px 0; }
+  //         .small-gap { height: 14px; }
+  //         .footer { text-align: center; padding: 28px 0 40px 0; font-size: 12px; color: #1a73e8; }
+
+  //         /* Make phone numbers, customer numbers break nicely on small screens */
+  //         .break-word { word-break: break-word; }
+
+  //         /* Responsive rules */
+  //         @media only screen and (max-width: 600px) {
+  //           .content { padding: 0 20px 30px 20px !important; font-size: 15px !important; line-height: 22px !important; }
+  //           .logo { width: 120px !important; margin-top: 24px !important; margin-bottom: 14px !important; }
+  //           .section-heading { font-size: 12px !important; }
+  //           .footer { padding: 20px 0 30px 0 !important; font-size: 13px !important; }
+  //         }
+
+  //         /* Outlook fallback to ensure fixed width */
+  //         @media all and (min-width:721px) {
+  //           .gmail-hide { display: none !important; }
+  //         }
+  //       </style>
+  //     </head>
+
+  //     <body style="margin:0; padding:0; background:#ffffff;">
+  //       <!-- outer wrapper -->
+  //       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-wrapper">
+  //         <tr>
+  //           <td align="center">
+  //             <!--[if mso]>
+  //             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="720"><tr><td>
+  //             <![endif]-->
+
+  //             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container">
+  //               <!-- logo row -->
+  //               <tr>
+  //                 <td align="center">
+  //                   <img src="cid:belar_logo" alt="Belar logo" class="logo" style="display:block; width:160px; max-width:40%; height:auto;" />
+  //                 </td>
+  //               </tr>
+
+  //               <!-- content row -->
+  //               <tr>
+  //                 <td class="content" style="font-family: Arial, Helvetica, sans-serif; color:#111111; font-size:14px; line-height:20px; padding:0 110px 40px 110px; text-align:left;">
+  //                   <p class="greeting" style="margin:12px 0 22px 0;">Dear ${fullName || ''},</p>
+
+  //                   <p class="body-paragraph" style="margin:8px 0 12px 0;">
+  //                     Thank you for requesting your SIM activation, this is now active and ready to use.
+  //                   </p>
+
+  //                   <div class="section">
+  //                     <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">ACCOUNT INFORMATION</div>
+
+  //                     <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+  //                       Customer Name:<br>
+  //                       ${fullName || ''}
+  //                     </div>
+
+  //                     <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+  //                       Phone Number:<br>
+  //                       ${phoneNumber || ''}
+  //                     </div>
+
+  //                     <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+  //                       Customer Number:<br>
+  //                       ${customerNumber || ''}
+  //                     </div>
+  //                   </div>
+
+  //                   <div class="section">
+  //                     <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">IMPORTANT INFORMATION</div>
+
+  //                     <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">Getting started</div>
+
+  //                     <div class="body-paragraph" style="margin:8px 0 12px 0;">
+  //                       Reinsert the SIM card then restart the phone to start using your new SIM card.
+  //                     </div>
+
+  //                     <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">Your first bill will be higher than your monthly plan price</div>
+
+  //                     <div class="body-paragraph" style="margin:8px 0 12px 0;">
+  //                       We bill in advance, so your first bill will be for the remainder of this month plus next month. For<br style="display:none;"/>
+  //                       example, if you activate on mid December then you will be charged A) the pro rata for the rest of<br style="display:none;"/>
+  //                       December plus B) January in advance.
+  //                     </div>
+
+  //                     <div class="body-paragraph" style="margin:8px 0 12px 0;">
+  //                       We will use the bank account or credit card details you provided in your activation request form.<br>
+  //                       An invoice will be sent to you at the start of each month showing you how much money will be<br>
+  //                       direct debited from your account. No action is required as you have direct debit setup.
+  //                     </div>
+  //                   </div>
+
+  //                   <div style="height:8px;"></div>
+
+  //                   <div class="footer" style="text-align:center; padding:28px 0 40px 0; font-size:12px; color:#1a73e8;">
+  //                     <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe</a> - <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe Preferences</a>
+  //                   </div>
+  //                 </td>
+  //               </tr>
+  //             </table>
+
+  //             <!--[if mso]>
+  //             </td></tr></table>
+  //             <![endif]-->
+  //           </td>
+  //         </tr>
+  //       </table>
+  //     </body>
+  //     </html>
+  //   `,
+  //     attachments: [
+  //       {
+  //         filename: 'belar.png',
+  //         path: 'capture.png', // keep or change to your logo path
+  //         cid: 'belar_logo',
+  //       },
+  //     ],
+  //   });
+  // }
   async sendPhysicalSimActivationEmail(params: {
     to: string;
     fullName: string;
@@ -1047,143 +1208,144 @@ export class EmailService {
       bcc: 'lee@bele.ai, brian@bele.ai, karimjawwad09@gmail.com',
       subject: 'Your SIM Card is Now Active!',
       html: `
-      <!doctype html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width,initial-scale=1"/>
-        <title>Your SIM is Active</title>
-        <style>
-          /* Basic reset */
-          body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-          table { border-collapse: collapse !important; }
-          img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
-          a { color: #1a73e8; text-decoration: none; }
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <title>Your SIM is Active</title>
+      <style>
+        /* Basic reset */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table { border-collapse: collapse !important; }
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
+        a { color: #1a73e8; text-decoration: none; }
 
-          /* Container */
-          .email-wrapper { width: 100%; background: #ffffff; padding: 0; margin: 0; }
+        /* Container */
+        .email-wrapper { width: 100%; background: #ffffff; padding: 0; margin: 0; }
 
-          /* The inner content table -- max width for desktop */
-          .email-container { width: 100%; max-width: 720px; margin: 0 auto; }
+        /* The inner content table -- max width for desktop */
+        .email-container { width: 100%; max-width: 720px; margin: 0 auto; }
 
-          /* Logo */
-          .logo { width: 160px; max-width: 40%; height: auto; display: block; margin: 36px auto 18px auto; }
+        /* Logo */
+        .logo { width: 160px; max-width: 40%; height: auto; display: block; margin: 36px auto 18px auto; }
 
-          /* Content cell */
-          .content { font-family: Arial, Helvetica, sans-serif; color: #111111; font-size: 14px; line-height: 20px; padding: 0 110px 40px 110px; text-align: left; }
+        /* Content cell */
+        .content { font-family: Arial, Helvetica, sans-serif; color: #111111; font-size: 14px; line-height: 20px; padding: 0 110px 40px 110px; text-align: left; }
 
-          /* Headings and paragraphs */
-          .greeting { margin: 12px 0 22px 0; }
-          .section-heading { margin-top: 18px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 0.3px; }
-          .body-paragraph { margin: 8px 0 12px 0; }
-          .small-gap { height: 14px; }
-          .footer { text-align: center; padding: 28px 0 40px 0; font-size: 12px; color: #1a73e8; }
+        /* Headings and paragraphs */
+        .greeting { margin: 12px 0 22px 0; }
+        .section-heading { margin-top: 18px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 0.3px; }
+        .body-paragraph { margin: 8px 0 12px 0; }
+        .small-gap { height: 14px; }
+        .footer { text-align: center; padding: 28px 0 40px 0; font-size: 12px; color: #1a73e8; }
 
-          /* Make phone numbers, customer numbers break nicely on small screens */
-          .break-word { word-break: break-word; }
+        /* Make phone numbers, customer numbers break nicely on small screens */
+        .break-word { word-break: break-word; }
 
-          /* Responsive rules */
-          @media only screen and (max-width: 600px) {
-            .content { padding: 0 20px 30px 20px !important; font-size: 15px !important; line-height: 22px !important; }
-            .logo { width: 120px !important; margin-top: 24px !important; margin-bottom: 14px !important; }
-            .section-heading { font-size: 12px !important; }
-            .footer { padding: 20px 0 30px 0 !important; font-size: 13px !important; }
-          }
+        /* Responsive rules */
+        @media only screen and (max-width: 600px) {
+          .content { padding: 0 20px 30px 20px !important; font-size: 15px !important; line-height: 22px !important; }
+          .logo { width: 120px !important; margin-top: 24px !important; margin-bottom: 14px !important; }
+          .section-heading { font-size: 12px !important; }
+          .footer { padding: 20px 0 30px 0 !important; font-size: 13px !important; }
+        }
 
-          /* Outlook fallback to ensure fixed width */
-          @media all and (min-width:721px) {
-            .gmail-hide { display: none !important; }
-          }
-        </style>
-      </head>
+        /* Outlook fallback to ensure fixed width */
+        @media all and (min-width:721px) {
+          .gmail-hide { display: none !important; }
+        }
+      </style>
+    </head>
 
-      <body style="margin:0; padding:0; background:#ffffff;">
-        <!-- outer wrapper -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-wrapper">
-          <tr>
-            <td align="center">
-              <!--[if mso]>
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="720"><tr><td>
-              <![endif]-->
+    <body style="margin:0; padding:0; background:#ffffff;">
+      <!-- outer wrapper -->
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-wrapper">
+        <tr>
+          <td align="center">
+            <!--[if mso]>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="720"><tr><td>
+            <![endif]-->
 
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container">
-                <!-- logo row -->
-                <tr>
-                  <td align="center">
-                    <img src="cid:belar_logo" alt="Belar logo" class="logo" style="display:block; width:160px; max-width:40%; height:auto;" />
-                  </td>
-                </tr>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container">
+              <!-- logo row -->
+              <tr>
+                <td align="center">
+                  <img src="cid:belar_logo" alt="Belar logo" class="logo" style="display:block; width:160px; max-width:40%; height:auto;" />
+                </td>
+              </tr>
 
-                <!-- content row -->
-                <tr>
-                  <td class="content" style="font-family: Arial, Helvetica, sans-serif; color:#111111; font-size:14px; line-height:20px; padding:0 110px 40px 110px; text-align:left;">
-                    <p class="greeting" style="margin:12px 0 22px 0;">Dear ${fullName || ''},</p>
+              <!-- content row -->
+              <tr>
+                <td class="content" style="font-family: Arial, Helvetica, sans-serif; color:#111111; font-size:14px; line-height:20px; padding:0 110px 40px 110px; text-align:left;">
+                  <p class="greeting" style="margin:12px 0 22px 0;">Dear ${fullName || ''},</p>
 
-                    <p class="body-paragraph" style="margin:8px 0 12px 0;">
-                      Thank you for requesting your SIM activation, this is now active and ready to use.
-                    </p>
+                  <p class="body-paragraph" style="margin:8px 0 12px 0;">
+                    Thank you for requesting your SIM activation, this is now active and ready to use.
+                  </p>
 
-                    <div class="section">
-                      <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">ACCOUNT INFORMATION</div>
+                  <div class="section">
+                    <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">ACCOUNT INFORMATION</div>
 
-                      <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
-                        Customer Name:<br>
-                        ${fullName || ''}
-                      </div>
-
-                      <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
-                        Phone Number:<br>
-                        ${phoneNumber || ''}
-                      </div>
-
-                      <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
-                        Customer Number:<br>
-                        ${customerNumber || ''}
-                      </div>
+                    <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+                      Customer Name:<br>
+                      ${fullName || ''}
                     </div>
 
-                    <div class="section">
-                      <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">IMPORTANT INFORMATION</div>
-
-                      <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">Getting started</div>
-
-                      <div class="body-paragraph" style="margin:8px 0 12px 0;">
-                        Reinsert the SIM card then restart the phone to start using your new SIM card.
-                      </div>
-
-                      <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">Your first bill will be higher than your monthly plan price</div>
-
-                      <div class="body-paragraph" style="margin:8px 0 12px 0;">
-                        We bill in advance, so your first bill will be for the remainder of this month plus next month. For<br style="display:none;"/> 
-                        example, if you activate on mid December then you will be charged A) the pro rata for the rest of<br style="display:none;"/> 
-                        December plus B) January in advance.
-                      </div>
-
-
-                      <div class="body-paragraph" style="margin:8px 0 12px 0;">
-                        We will use the bank account or credit card details you provided in your activation request form.<br>
-                        An invoice will be sent to you at the start of each month showing you how much money will be<br>
-                        direct debited from your account. No action is required as you have direct debit setup.
-                      </div>
+                    <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+                      Phone Number:<br>
+                      ${phoneNumber || ''}
                     </div>
 
-                    <div style="height:8px;"></div>
-
-                    <div class="footer" style="text-align:center; padding:28px 0 40px 0; font-size:12px; color:#1a73e8;">
-                      <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe</a> - <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe Preferences</a>
+                    <div class="body-paragraph break-word" style="margin:8px 0 12px 0;">
+                      Customer Number:<br>
+                      ${customerNumber || ''}
                     </div>
-                  </td>
-                </tr>
-              </table>
+                  </div>
 
-              <!--[if mso]>
-              </td></tr></table>
-              <![endif]-->
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
+                  <div class="section">
+                    <div class="section-heading" style="margin-top:18px; margin-bottom:8px; font-size:13px; font-weight:700; color:#000; text-transform:uppercase; letter-spacing:0.3px;">IMPORTANT INFORMATION</div>
+
+                    <div class="body-paragraph" style="margin:8px 0 6px 0; font-weight:700;">Getting started</div>
+
+                    <div class="body-paragraph" style="margin:0 0 12px 0;">
+                      Insert the SIM card then restart the phone to start using your new SIM card.
+                    </div>
+
+                    <div class="body-paragraph" style="margin:8px 0 6px 0; font-weight:700;">Your first bill will be higher than your monthly plan price</div>
+
+                    <div class="body-paragraph" style="margin:0 0 12px 0;">
+                      We bill in advance, so your first bill will be for the remainder of this month plus next month. For example, if you activate on mid December then you will be charged A) the pro rata for the rest of December plus B) January in advance.
+                    </div>
+
+                    <div class="body-paragraph" style="margin:8px 0 12px 0;">
+                      We’ll send you an invoice on the 15th of each month before the payment is processed. It will come from confirmations@belarsystems.com.au
+                    </div>
+
+                    <div class="body-paragraph" style="margin:8px 0 12px 0;">
+                      If you have any questions at all, please don't hesitate to reach out. We're here to help.
+                    </div>
+
+                    <div class="body-paragraph" style="margin:8px 0 12px 0; font-weight:700;">
+                      Happy connecting!
+                    </div>
+                  </div>
+
+                  <div class="footer" style="text-align:center; padding:28px 0 40px 0; font-size:12px; color:#1a73e8;">
+                    <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe</a> - <a href="#" style="color:#1a73e8; text-decoration:none;">Unsubscribe Preferences</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <!--[if mso]>
+            </td></tr></table>
+            <![endif]-->
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
     `,
       attachments: [
         {
